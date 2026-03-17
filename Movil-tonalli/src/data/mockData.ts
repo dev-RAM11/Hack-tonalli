@@ -29,7 +29,7 @@ export const MODULES = [
     totalLessons: 8,
     completedLessons: 0,
     xpReward: 800,
-    locked: true,
+    locked: false,
     color: "#00C896",
   },
   {
@@ -40,7 +40,7 @@ export const MODULES = [
     totalLessons: 5,
     completedLessons: 0,
     xpReward: 500,
-    locked: true,
+    locked: false,
     color: "#9B59B6",
   },
 ];
@@ -220,6 +220,240 @@ export const LESSONS: Record<string, any[]> = {
             "Transaction fee: 0.00001 XLM",
             "Total supply: 50 billion XLM",
             "No mining — all XLM was created at genesis",
+          ],
+        },
+      ],
+    },
+  ],
+  m3: [
+    {
+      id: "l8",
+      moduleId: "m3",
+      title: "¿Qué es DeFi?",
+      emoji: "🏦",
+      xpReward: 100,
+      duration: "6 min",
+      completed: false,
+      locked: false,
+      content: [
+        {
+          type: "text",
+          text: "DeFi (Finanzas Descentralizadas) es un ecosistema de aplicaciones financieras construidas sobre blockchain que operan sin intermediarios como bancos o brokers.",
+        },
+        {
+          type: "highlight",
+          text: "DeFi busca recrear servicios financieros tradicionales (préstamos, ahorro, trading) de forma abierta, transparente y accesible para todos.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Sin intermediarios — código en lugar de bancos",
+            "Accesible — solo necesitas internet y una wallet",
+            "Transparente — todo el código es público y auditable",
+            "Componible — los protocolos se conectan entre sí como piezas LEGO",
+          ],
+        },
+      ],
+    },
+    {
+      id: "l9",
+      moduleId: "m3",
+      title: "Smart Contracts",
+      emoji: "📜",
+      xpReward: 100,
+      duration: "7 min",
+      completed: false,
+      locked: false,
+      content: [
+        {
+          type: "text",
+          text: "Un smart contract (contrato inteligente) es un programa que se ejecuta automáticamente en la blockchain cuando se cumplen condiciones predefinidas.",
+        },
+        {
+          type: "highlight",
+          text: "Piensa en un smart contract como una máquina expendedora: insertas dinero, seleccionas el producto, y la máquina lo entrega automáticamente sin necesidad de un vendedor.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Autoejecutables — se activan solos al cumplirse las condiciones",
+            "Inmutables — una vez desplegados no se pueden modificar",
+            "Deterministas — siempre producen el mismo resultado",
+            "Soroban — la plataforma de smart contracts de Stellar",
+          ],
+        },
+      ],
+    },
+    {
+      id: "l10",
+      moduleId: "m3",
+      title: "Liquidity Pools & AMMs",
+      emoji: "🌊",
+      xpReward: 100,
+      duration: "7 min",
+      completed: false,
+      locked: false,
+      content: [
+        {
+          type: "text",
+          text: "Un pool de liquidez es un fondo de tokens bloqueados en un smart contract que facilita el trading descentralizado. Los AMM (Automated Market Makers) usan estos pools para determinar precios automáticamente.",
+        },
+        {
+          type: "highlight",
+          text: "En lugar de un libro de órdenes tradicional, los AMM usan fórmulas matemáticas para calcular precios. Cualquier persona puede ser proveedor de liquidez y ganar comisiones.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Proveedores de liquidez ganan fees por cada trade",
+            "No necesitas comprador/vendedor directo",
+            "Stellar DEX tiene su propio sistema de liquidez nativo",
+            "Riesgo: impermanent loss cuando los precios cambian mucho",
+          ],
+        },
+      ],
+    },
+    {
+      id: "l11",
+      moduleId: "m3",
+      title: "Lending & Borrowing",
+      emoji: "💰",
+      xpReward: 100,
+      duration: "6 min",
+      completed: false,
+      locked: false,
+      content: [
+        {
+          type: "text",
+          text: "Los protocolos de préstamos DeFi permiten prestar y pedir prestado cripto sin intermediarios. Los prestamistas ganan intereses y los prestatarios deben dejar colateral.",
+        },
+        {
+          type: "highlight",
+          text: "A diferencia de un banco, en DeFi los préstamos son sobre-colateralizados: debes depositar más valor del que pides prestado, lo que protege al protocolo.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Préstamos sin permisos — cualquiera puede participar",
+            "Tasas de interés dinámicas según oferta y demanda",
+            "Flash loans — préstamos instantáneos sin colateral (deben devolverse en la misma transacción)",
+            "Liquidación automática si el colateral cae de valor",
+          ],
+        },
+      ],
+    },
+    {
+      id: "l12",
+      moduleId: "m3",
+      title: "Stablecoins",
+      emoji: "💵",
+      xpReward: 100,
+      duration: "5 min",
+      completed: false,
+      locked: false,
+      content: [
+        {
+          type: "text",
+          text: "Las stablecoins son criptomonedas diseñadas para mantener un valor estable, generalmente vinculado a una moneda fiat como el dólar. Son fundamentales en DeFi.",
+        },
+        {
+          type: "highlight",
+          text: "USDC es una stablecoin popular en Stellar que mantiene una paridad 1:1 con el dólar estadounidense, respaldada por reservas reales.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Colateralizadas por fiat (USDC, USDT) — respaldadas por dólares reales",
+            "Colateralizadas por cripto (DAI) — respaldadas por otras criptos",
+            "Algorítmicas — usan algoritmos para mantener el precio",
+            "En Stellar: USDC está disponible nativamente en la red",
+          ],
+        },
+      ],
+    },
+    {
+      id: "l13",
+      moduleId: "m3",
+      title: "Yield Farming & Staking",
+      emoji: "🌾",
+      xpReward: 100,
+      duration: "6 min",
+      completed: false,
+      locked: false,
+      content: [
+        {
+          type: "text",
+          text: "Yield farming es la práctica de mover tus cripto entre diferentes protocolos DeFi para maximizar rendimientos. Staking es bloquear tokens para ayudar a asegurar la red y ganar recompensas.",
+        },
+        {
+          type: "highlight",
+          text: "El yield farming puede ofrecer rendimientos altos, pero también conlleva riesgos como smart contract bugs, impermanent loss y volatilidad del mercado.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Staking — bloquear tokens para validar transacciones",
+            "Yield farming — buscar los mejores rendimientos entre protocolos",
+            "APY vs APR — APY incluye interés compuesto, APR no",
+            "DYOR (Do Your Own Research) — siempre investiga antes de invertir",
+          ],
+        },
+      ],
+    },
+    {
+      id: "l14",
+      moduleId: "m3",
+      title: "Riesgos en DeFi",
+      emoji: "⚠️",
+      xpReward: 100,
+      duration: "6 min",
+      completed: false,
+      locked: false,
+      content: [
+        {
+          type: "text",
+          text: "DeFi ofrece grandes oportunidades pero también riesgos importantes. Es crucial entenderlos antes de participar.",
+        },
+        {
+          type: "highlight",
+          text: "El mayor riesgo en DeFi es el riesgo de smart contracts: si el código tiene un bug, los fondos pueden perderse permanentemente.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Smart contract risk — bugs o vulnerabilidades en el código",
+            "Rug pulls — proyectos fraudulentos que roban fondos",
+            "Impermanent loss — pérdida temporal al proveer liquidez",
+            "Regulación — cambios legales pueden afectar protocolos",
+          ],
+        },
+      ],
+    },
+    {
+      id: "l15",
+      moduleId: "m3",
+      title: "DeFi en Stellar (Soroban)",
+      emoji: "🚀",
+      xpReward: 100,
+      duration: "7 min",
+      completed: false,
+      locked: false,
+      content: [
+        {
+          type: "text",
+          text: "Soroban es la plataforma de smart contracts de Stellar, diseñada para ser segura, escalable y amigable para desarrolladores. Permite construir aplicaciones DeFi en la red Stellar.",
+        },
+        {
+          type: "highlight",
+          text: "Soroban usa Rust como lenguaje de programación, lo que reduce errores comunes y hace los smart contracts más seguros que en otras plataformas.",
+        },
+        {
+          type: "bullets",
+          items: [
+            "Escrito en Rust — lenguaje seguro y eficiente",
+            "Fees ultra bajos — hereda los bajos costos de Stellar",
+            "Interoperabilidad — se conecta con el DEX nativo de Stellar",
+            "Escalable — diseñado para manejar miles de transacciones por segundo",
           ],
         },
       ],
@@ -524,6 +758,356 @@ export const QUIZZES: Record<string, any> = {
       },
     ],
   },
+  l8: {
+    lessonId: "l8",
+    questions: [
+      {
+        id: "q8_1",
+        question: "¿Qué significa DeFi?",
+        options: [
+          "Digital Finance",
+          "Finanzas Descentralizadas",
+          "Definición Financiera",
+          "Deflación Internacional",
+        ],
+        correctIndex: 1,
+        explanation:
+          "DeFi significa Finanzas Descentralizadas — un ecosistema de aplicaciones financieras sobre blockchain sin intermediarios.",
+      },
+      {
+        id: "q8_2",
+        question: "¿Qué reemplaza a los bancos en DeFi?",
+        options: [
+          "Gobiernos",
+          "Código (smart contracts)",
+          "Empresas fintech",
+          "Inteligencia artificial",
+        ],
+        correctIndex: 1,
+        explanation:
+          "En DeFi, el código (smart contracts) reemplaza a los intermediarios tradicionales como bancos y brokers.",
+      },
+      {
+        id: "q8_3",
+        question: "¿Qué necesitas para acceder a DeFi?",
+        options: [
+          "Una cuenta bancaria y un pasaporte",
+          "Solo internet y una wallet",
+          "Ser programador",
+          "Inversión mínima de $1000",
+        ],
+        correctIndex: 1,
+        explanation:
+          "DeFi es accesible para todos — solo necesitas una conexión a internet y una wallet crypto.",
+      },
+      {
+        id: "q8_4",
+        question: "¿Qué significa que DeFi sea 'componible'?",
+        options: [
+          "Que se puede romper fácilmente",
+          "Que los protocolos se conectan entre sí como piezas LEGO",
+          "Que solo funciona en una blockchain",
+          "Que es temporal",
+        ],
+        correctIndex: 1,
+        explanation:
+          "La componibilidad significa que los protocolos DeFi pueden conectarse entre sí como piezas LEGO, creando servicios financieros más complejos.",
+      },
+    ],
+  },
+  l9: {
+    lessonId: "l9",
+    questions: [
+      {
+        id: "q9_1",
+        question: "¿Qué es un smart contract?",
+        options: [
+          "Un contrato legal firmado digitalmente",
+          "Un programa que se ejecuta automáticamente en blockchain cuando se cumplen condiciones",
+          "Un acuerdo entre dos empresas de tecnología",
+          "Una app de celular para contratos",
+        ],
+        correctIndex: 1,
+        explanation:
+          "Un smart contract es un programa autoejecutable en blockchain que se activa cuando se cumplen condiciones predefinidas.",
+      },
+      {
+        id: "q9_2",
+        question: "¿Cómo se llama la plataforma de smart contracts de Stellar?",
+        options: ["Ethereum", "Solana", "Soroban", "Polkadot"],
+        correctIndex: 2,
+        explanation:
+          "Soroban es la plataforma de smart contracts de Stellar, diseñada para seguridad y escalabilidad.",
+      },
+      {
+        id: "q9_3",
+        question: "¿Qué característica NO tienen los smart contracts?",
+        options: [
+          "Son autoejecutables",
+          "Son inmutables",
+          "Se pueden modificar después de desplegar",
+          "Son deterministas",
+        ],
+        correctIndex: 2,
+        explanation:
+          "Los smart contracts son inmutables — una vez desplegados NO se pueden modificar, lo que hace crucial auditarlos antes del despliegue.",
+      },
+    ],
+  },
+  l10: {
+    lessonId: "l10",
+    questions: [
+      {
+        id: "q10_1",
+        question: "¿Qué es un pool de liquidez?",
+        options: [
+          "Una piscina de natación para traders",
+          "Un fondo de tokens en un smart contract que facilita el trading",
+          "Una cuenta bancaria compartida",
+          "Un tipo de criptomoneda",
+        ],
+        correctIndex: 1,
+        explanation:
+          "Un pool de liquidez es un fondo de tokens bloqueados en un smart contract que facilita el trading descentralizado.",
+      },
+      {
+        id: "q10_2",
+        question: "¿Qué es un AMM?",
+        options: [
+          "Application Mobile Manager",
+          "Automated Market Maker — usa fórmulas para calcular precios",
+          "Automated Money Machine",
+          "Advanced Mining Method",
+        ],
+        correctIndex: 1,
+        explanation:
+          "Un AMM (Automated Market Maker) usa fórmulas matemáticas para determinar precios automáticamente en lugar de un libro de órdenes.",
+      },
+      {
+        id: "q10_3",
+        question: "¿Qué es impermanent loss?",
+        options: [
+          "Perder tu wallet",
+          "Una pérdida temporal cuando los precios cambian al proveer liquidez",
+          "Un hack al protocolo",
+          "Un impuesto sobre ganancias",
+        ],
+        correctIndex: 1,
+        explanation:
+          "Impermanent loss es una pérdida temporal que ocurre cuando los precios de los tokens cambian mucho mientras provees liquidez.",
+      },
+    ],
+  },
+  l11: {
+    lessonId: "l11",
+    questions: [
+      {
+        id: "q11_1",
+        question: "¿Qué son los préstamos sobre-colateralizados?",
+        options: [
+          "Préstamos sin garantía",
+          "Préstamos donde depositas más valor del que pides",
+          "Préstamos con tasas de interés cero",
+          "Préstamos solo para empresas",
+        ],
+        correctIndex: 1,
+        explanation:
+          "En DeFi los préstamos son sobre-colateralizados: debes depositar más valor del que pides prestado para proteger al protocolo.",
+      },
+      {
+        id: "q11_2",
+        question: "¿Qué es un flash loan?",
+        options: [
+          "Un préstamo con interés muy alto",
+          "Un préstamo a largo plazo",
+          "Un préstamo instantáneo sin colateral que debe devolverse en la misma transacción",
+          "Un préstamo gubernamental",
+        ],
+        correctIndex: 2,
+        explanation:
+          "Los flash loans son préstamos instantáneos sin colateral que deben devolverse en la misma transacción de blockchain.",
+      },
+      {
+        id: "q11_3",
+        question: "¿Qué determina las tasas de interés en DeFi?",
+        options: [
+          "El banco central",
+          "La oferta y demanda de los usuarios",
+          "El gobierno",
+          "Son fijas y nunca cambian",
+        ],
+        correctIndex: 1,
+        explanation:
+          "En DeFi, las tasas de interés son dinámicas y se ajustan automáticamente según la oferta y demanda de los usuarios.",
+      },
+    ],
+  },
+  l12: {
+    lessonId: "l12",
+    questions: [
+      {
+        id: "q12_1",
+        question: "¿Qué es una stablecoin?",
+        options: [
+          "Una cripto que siempre sube de precio",
+          "Una cripto diseñada para mantener un valor estable",
+          "Una moneda física digital",
+          "Un tipo de NFT",
+        ],
+        correctIndex: 1,
+        explanation:
+          "Las stablecoins son criptomonedas diseñadas para mantener un valor estable, generalmente vinculado al dólar.",
+      },
+      {
+        id: "q12_2",
+        question: "¿Qué stablecoin está disponible nativamente en Stellar?",
+        options: ["DAI", "USDT", "USDC", "BUSD"],
+        correctIndex: 2,
+        explanation:
+          "USDC está disponible nativamente en la red Stellar, manteniendo paridad 1:1 con el dólar estadounidense.",
+      },
+      {
+        id: "q12_3",
+        question: "¿Cómo mantiene DAI su estabilidad?",
+        options: [
+          "Respaldada por dólares en un banco",
+          "Respaldada por otras criptomonedas como colateral",
+          "El gobierno garantiza su valor",
+          "No es estable",
+        ],
+        correctIndex: 1,
+        explanation:
+          "DAI es una stablecoin colateralizada por cripto — está respaldada por otras criptomonedas depositadas como colateral en smart contracts.",
+      },
+    ],
+  },
+  l13: {
+    lessonId: "l13",
+    questions: [
+      {
+        id: "q13_1",
+        question: "¿Qué es yield farming?",
+        options: [
+          "Cultivar criptomonedas en una granja",
+          "Mover cripto entre protocolos para maximizar rendimientos",
+          "Minar Bitcoin",
+          "Comprar y vender NFTs",
+        ],
+        correctIndex: 1,
+        explanation:
+          "Yield farming es mover tus cripto entre diferentes protocolos DeFi para obtener los mejores rendimientos posibles.",
+      },
+      {
+        id: "q13_2",
+        question: "¿Cuál es la diferencia entre APY y APR?",
+        options: [
+          "Son lo mismo",
+          "APY incluye interés compuesto, APR no",
+          "APR es siempre mayor que APY",
+          "APY es para cripto y APR para fiat",
+        ],
+        correctIndex: 1,
+        explanation:
+          "APY (Annual Percentage Yield) incluye interés compuesto, mientras que APR (Annual Percentage Rate) no lo incluye.",
+      },
+      {
+        id: "q13_3",
+        question: "¿Qué es staking?",
+        options: [
+          "Vender tus criptomonedas",
+          "Bloquear tokens para ayudar a asegurar la red y ganar recompensas",
+          "Pedir un préstamo",
+          "Crear un NFT",
+        ],
+        correctIndex: 1,
+        explanation:
+          "Staking es bloquear tus tokens para participar en la validación de transacciones y ganar recompensas a cambio.",
+      },
+    ],
+  },
+  l14: {
+    lessonId: "l14",
+    questions: [
+      {
+        id: "q14_1",
+        question: "¿Cuál es el mayor riesgo en DeFi?",
+        options: [
+          "Que el internet se caiga",
+          "Riesgo de smart contracts — bugs que pueden causar pérdida de fondos",
+          "Que los bancos cierren",
+          "Inflación del dólar",
+        ],
+        correctIndex: 1,
+        explanation:
+          "El mayor riesgo en DeFi es el riesgo de smart contracts: si el código tiene un bug, los fondos pueden perderse permanentemente.",
+      },
+      {
+        id: "q14_2",
+        question: "¿Qué es un rug pull?",
+        options: [
+          "Una estrategia de trading legítima",
+          "Un proyecto fraudulento que roba los fondos de los usuarios",
+          "Un tipo de smart contract",
+          "Una forma de staking",
+        ],
+        correctIndex: 1,
+        explanation:
+          "Un rug pull es un proyecto fraudulento donde los creadores se llevan los fondos de los usuarios y desaparecen.",
+      },
+      {
+        id: "q14_3",
+        question: "¿Qué significa DYOR?",
+        options: [
+          "Do Your Own Research — investiga antes de invertir",
+          "Don't Yield On Returns",
+          "Decentralized Yield Over Risk",
+          "Digital Yield Operating Rules",
+        ],
+        correctIndex: 0,
+        explanation:
+          "DYOR significa 'Do Your Own Research' — siempre investiga y entiende un proyecto antes de invertir tu dinero.",
+      },
+    ],
+  },
+  l15: {
+    lessonId: "l15",
+    questions: [
+      {
+        id: "q15_1",
+        question: "¿Qué lenguaje de programación usa Soroban?",
+        options: ["JavaScript", "Python", "Rust", "Solidity"],
+        correctIndex: 2,
+        explanation:
+          "Soroban usa Rust como lenguaje de programación, lo que reduce errores comunes y hace los smart contracts más seguros.",
+      },
+      {
+        id: "q15_2",
+        question: "¿Qué ventaja tiene Soroban sobre otras plataformas?",
+        options: [
+          "Es más caro",
+          "Solo funciona con Bitcoin",
+          "Fees ultra bajos y se conecta con el DEX nativo de Stellar",
+          "Requiere permiso para usarlo",
+        ],
+        correctIndex: 2,
+        explanation:
+          "Soroban hereda los bajos costos de Stellar y tiene interoperabilidad con el DEX nativo de la red.",
+      },
+      {
+        id: "q15_3",
+        question: "¿Por qué Rust hace los smart contracts más seguros?",
+        options: [
+          "Porque es más lento",
+          "Porque reduce errores comunes de programación",
+          "Porque solo lo usan expertos",
+          "Porque no permite crear smart contracts complejos",
+        ],
+        correctIndex: 1,
+        explanation:
+          "Rust tiene un sistema de tipos estricto y manejo de memoria seguro que previene errores comunes que causan vulnerabilidades en smart contracts.",
+      },
+    ],
+  },
 };
 
 export const CERTIFICATES = [
@@ -556,14 +1140,14 @@ export const CERTIFICATES = [
 ];
 
 export const LEADERBOARD = [
-  { rank: 1, name: "María González", xp: 12500, streak: 45, avatar: "👩‍🎓", badge: "🏆" },
-  { rank: 2, name: "Carlos Ruiz", xp: 11200, streak: 38, avatar: "👨‍💻", badge: "🥈" },
-  { rank: 3, name: "Ana López", xp: 10800, streak: 32, avatar: "👩‍🚀", badge: "🥉" },
-  { rank: 4, name: "Diego Martín", xp: 9500, streak: 28, avatar: "🧑‍🎨", badge: "" },
-  { rank: 5, name: "Sofía Herrera", xp: 8900, streak: 25, avatar: "👩‍🔬", badge: "" },
-  { rank: 6, name: "Luis Torres", xp: 7800, streak: 20, avatar: "🧑‍💼", badge: "" },
-  { rank: 7, name: "Valentina Cruz", xp: 6700, streak: 15, avatar: "👩‍🎤", badge: "" },
-  { rank: 8, name: "Tú", xp: 3400, streak: 7, avatar: "😎", badge: "", isCurrentUser: true },
-  { rank: 9, name: "Pablo Jiménez", xp: 3100, streak: 5, avatar: "🧑‍🍳", badge: "" },
-  { rank: 10, name: "Isabella Moreno", xp: 2800, streak: 4, avatar: "👩‍🏫", badge: "" },
+  { rank: 1, name: "María González", xp: 2500, streak: 8, avatar: "👩‍🎓", badge: "🏆" },
+  { rank: 2, name: "Carlos Ruiz", xp: 2200, streak: 6, avatar: "👨‍💻", badge: "🥈" },
+  { rank: 3, name: "Ana López", xp: 1900, streak: 5, avatar: "👩‍🚀", badge: "🥉" },
+  { rank: 4, name: "Diego Martín", xp: 1700, streak: 4, avatar: "🧑‍🎨", badge: "" },
+  { rank: 5, name: "Sofía Herrera", xp: 1500, streak: 3, avatar: "👩‍🔬", badge: "" },
+  { rank: 6, name: "Luis Torres", xp: 1300, streak: 3, avatar: "🧑‍💼", badge: "" },
+  { rank: 7, name: "Valentina Cruz", xp: 1100, streak: 2, avatar: "👩‍🎤", badge: "" },
+  { rank: 8, name: "Tú", xp: 0, streak: 0, avatar: "😎", badge: "", isCurrentUser: true },
+  { rank: 9, name: "Pablo Jiménez", xp: 1050, streak: 1, avatar: "🧑‍🍳", badge: "" },
+  { rank: 10, name: "Isabella Moreno", xp: 1000, streak: 1, avatar: "👩‍🏫", badge: "" },
 ];

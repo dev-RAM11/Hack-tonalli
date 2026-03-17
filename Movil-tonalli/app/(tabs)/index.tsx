@@ -43,7 +43,7 @@ export default function DashboardScreen() {
     setTimeout(() => setRefreshing(false), 1000);
   };
 
-  const effectiveXP = totalXP || (user?.xp ?? 0);
+  const effectiveXP = totalXP + (user?.xp ?? 0);
   const xpInLevel = effectiveXP % XP_PER_LEVEL;
   const level = Math.floor(effectiveXP / XP_PER_LEVEL) + 1;
   const effectiveStreak = currentStreak || (user?.streak ?? 0);

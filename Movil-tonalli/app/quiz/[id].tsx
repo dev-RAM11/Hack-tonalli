@@ -86,10 +86,10 @@ export default function QuizScreen() {
     } else {
       // Quiz finished — correctCount already includes current answer via handleAnswer
       const finalScore = Math.round((correctCount / quiz.questions.length) * 100);
-      completeLesson(id ?? "", finalScore, 100);
-      if (user) {
+      const xpGained = completeLesson(id ?? "", finalScore, 100);
+      if (user && xpGained > 0) {
         updateUser({
-          xp: (user.xp ?? 0) + 100,
+          xp: (user.xp ?? 0) + xpGained,
           lessonsCompleted: (user.lessonsCompleted ?? 0) + 1,
           xlmBalance: (user.xlmBalance ?? 0) + (finalScore === 100 ? 0.55 : 0.5),
         });

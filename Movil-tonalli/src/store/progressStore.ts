@@ -13,7 +13,7 @@ interface ProgressState {
   currentStreak: number;
   totalXP: number;
   isHydrated: boolean;
-  completeLesson: (lessonId: string, score: number, xpReward: number) => void;
+  completeLesson: (lessonId: string, score: number, xpReward: number) => number;
   isLessonCompleted: (lessonId: string) => boolean;
   getLessonScore: (lessonId: string) => number | undefined;
   hydrate: () => Promise<void>;
@@ -56,7 +56,7 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
     }
   },
 
-  completeLesson: (lessonId: string, score: number, xpReward: number) => {
+  completeLesson: (lessonId: string, score: number, xpReward: number): number => {
     const { lessonsProgress, totalXP, currentStreak } = get();
     if (!lessonsProgress[lessonId]?.completed) {
       const updated = {
@@ -74,7 +74,9 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
       };
       set(updated);
       persistProgress(updated);
+      return xpReward;
     }
+    return 0;
   },
 
   isLessonCompleted: (lessonId: string) => {

@@ -16,20 +16,22 @@ export default function LeaderboardScreen() {
   const { totalXP, currentStreak } = useProgressStore();
 
   // Replace "Tú" entry with real user data
+  const effectiveXP = totalXP + (user?.xp ?? 0);
+  const effectiveStreak = currentStreak || (user?.streak ?? 0);
   const leaderboard = LEADERBOARD.map((entry) => {
     if ((entry as any).isCurrentUser) {
       return {
         ...entry,
         name: user?.name ?? "Tú",
-        xp: totalXP || entry.xp,
-        streak: currentStreak || entry.streak,
+        xp: effectiveXP > 0 ? effectiveXP : entry.xp,
+        streak: effectiveStreak > 0 ? effectiveStreak : entry.streak,
       };
     }
     return entry;
   }).sort((a, b) => b.xp - a.xp).map((e, i) => ({ ...e, rank: i + 1 }));
 
   const top3 = leaderboard.slice(0, 3);
-  const rest = leaderboard.slice(3);
+  const rest = leaderboard;
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -124,7 +126,7 @@ export default function LeaderboardScreen() {
           ))}
         </View>
 
-        <View style={{ height: 24 }} />
+        <View style={{ height: 100 }} />
       </ScrollView>
     </SafeAreaView>
   );

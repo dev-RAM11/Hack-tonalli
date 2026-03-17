@@ -20,7 +20,7 @@ const XP_PER_LEVEL = 1000;
 export default function ProfileScreen() {
   const { user, logout } = useAuthStore();
   const { totalXP, currentStreak, lessonsProgress } = useProgressStore();
-  const effectiveXP = totalXP || (user?.xp ?? 0);
+  const effectiveXP = totalXP + (user?.xp ?? 0);
   const xpInLevel = effectiveXP % XP_PER_LEVEL;
   const level = Math.floor(effectiveXP / XP_PER_LEVEL) + 1;
   const completedCount = Object.keys(lessonsProgress).length;

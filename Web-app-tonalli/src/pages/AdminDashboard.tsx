@@ -23,6 +23,7 @@ interface ChapterForm {
   moduleTag: string;
   order: number;
   published: boolean;
+  releaseWeek: string;
   estimatedMinutes: number;
   xpReward: number;
   modules: [ModuleForm, ModuleForm, ModuleForm]; // 3 lesson modules
@@ -43,6 +44,7 @@ const emptyForm: ChapterForm = {
   moduleTag: '',
   order: 0,
   published: false,
+  releaseWeek: '',
   estimatedMinutes: 15,
   xpReward: 140,
   modules: [
@@ -114,6 +116,7 @@ export function AdminDashboard() {
       moduleTag: ch.moduleTag || '',
       order: ch.order,
       published: ch.published,
+      releaseWeek: (ch as any).releaseWeek || '',
       estimatedMinutes: ch.estimatedMinutes || 15,
       xpReward: ch.xpReward || 140,
       modules,
@@ -133,7 +136,7 @@ export function AdminDashboard() {
         // Update chapter metadata
         await apiService.adminUpdateChapter(editingId, {
           title: form.title, description: form.description, moduleTag: form.moduleTag,
-          order: form.order, published: form.published,
+          order: form.order, published: form.published, releaseWeek: form.releaseWeek || undefined,
           estimatedMinutes: form.estimatedMinutes, xpReward: form.xpReward,
         });
         // Update each module
@@ -151,7 +154,7 @@ export function AdminDashboard() {
         // Create chapter (auto-creates 4 modules)
         const created = await apiService.adminCreateChapter({
           title: form.title, description: form.description, moduleTag: form.moduleTag,
-          order: form.order, published: form.published,
+          order: form.order, published: form.published, releaseWeek: form.releaseWeek || undefined,
           estimatedMinutes: form.estimatedMinutes, xpReward: form.xpReward,
         });
         // Update the 3 lesson modules with content
@@ -242,8 +245,17 @@ export function AdminDashboard() {
                   <div style={{ fontWeight: 600, fontSize: '0.95rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ch.title}</div>
                   <div style={{ display: 'flex', gap: 8, marginTop: 4, flexWrap: 'wrap', alignItems: 'center' }}>
                     {ch.moduleTag && <span className="badge badge-blue">{ch.moduleTag}</span>}
+                    {(ch as any).releaseWeek && (
+                      <span className="badge" style={{ background: 'rgba(245,158,11,0.1)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.25)', fontSize: '0.68rem' }}>
+                        Semana: {(ch as any).releaseWeek}
+                      </span>
+                    )}
+                    {!(ch as any).releaseWeek && ch.published && (
+                      <span className="badge" style={{ background: 'rgba(139,92,246,0.1)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.25)', fontSize: '0.68rem' }}>
+                        Sin semana (acceso libre)
+                      </span>
+                    )}
                     <span style={{ fontSize: '0.72rem', color: 'var(--text-subtle)' }}>{ch.estimatedMinutes} min · {ch.xpReward} XP</span>
-                    <span style={{ fontSize: '0.72rem', color: 'var(--text-subtle)' }}>{(ch as any).modules?.length || 4} modulos</span>
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: ch.published ? 'rgba(63,185,80,0.1)' : 'rgba(125,133,144,0.1)', border: `1px solid ${ch.published ? 'rgba(63,185,80,0.25)' : 'rgba(125,133,144,0.2)'}`, borderRadius: 5, padding: '3px 10px', fontSize: '0.72rem', fontWeight: 600, color: ch.published ? 'var(--success)' : 'var(--text-muted)', whiteSpace: 'nowrap', flexShrink: 0 }}>
@@ -294,6 +306,30 @@ export function AdminDashboard() {
                   <label className="form-label">Descripcion</label>
                   <input className="input-field" placeholder="Breve descripcion del capitulo" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
                 </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                  <div className="form-group">
+                    <label className="form-label">Semana de liberacion (Free)</label>
+                    <input className="input-field" placeholder="Ej. 2026-W12" value={form.releaseWeek} onChange={e => setForm(f => ({ ...f, releaseWeek: e.target.value }))} />
+                    <p style={{ fontSize: '0.7rem', color: 'var(--text-subtle)', marginTop: 2 }}>Formato: YYYY-Wnn. Free accede cuando releaseWeek &le; semana actual. Premium: +1 semana anticipada.</p>
+                  </div>
+                  <div className="form-group" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      style={{ marginTop: 20 }}
+                      onClick={() => {
+                        const now = new Date();
+                        const jan1 = new Date(now.getFullYear(), 0, 1);
+                        const days = Math.floor((now.getTime() - jan1.getTime()) / 86400000);
+                        const wk = Math.ceil((days + jan1.getDay() + 1) / 7);
+                        setForm(f => ({ ...f, releaseWeek: `${now.getFullYear()}-W${String(wk).padStart(2, '0')}` }));
+                      }}
+                    >
+                      Liberar esta semana
+                    </button>
+                  </div>
+                </div>
+
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
                   <div className="form-group">
                     <label className="form-label">Tag</label>

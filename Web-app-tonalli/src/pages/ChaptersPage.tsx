@@ -107,9 +107,13 @@ export function ChaptersPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
                   className="card"
-                  style={{ cursor: 'pointer', position: 'relative', overflow: 'hidden' }}
-                  whileHover={{ y: -3, borderColor: 'var(--border-active)' }}
-                  onClick={() => navigate(`/chapters/${ch.id}`)}
+                  style={{
+                    cursor: ch.accessible === false ? 'not-allowed' : 'pointer',
+                    position: 'relative', overflow: 'hidden',
+                    opacity: ch.accessible === false ? 0.5 : 1,
+                  }}
+                  whileHover={ch.accessible !== false ? { y: -3, borderColor: 'var(--border-active)' } : {}}
+                  onClick={() => ch.accessible !== false ? navigate(`/chapters/${ch.id}`) : null}
                 >
                   {/* White shimmer top */}
                   <div style={{
@@ -142,8 +146,16 @@ export function ChaptersPage() {
                   </div>
 
                   <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: 8, lineHeight: 1.4, fontFamily: "'Space Grotesk', sans-serif" }}>
-                    {ch.title}
+                    {ch.accessible === false && '\uD83D\uDD12 '}{ch.title}
                   </h3>
+
+                  {ch.accessible === false && ch.lockedReason && (
+                    <div style={{ background: 'rgba(255,215,0,0.08)', border: '1px solid rgba(255,215,0,0.2)', borderRadius: 6, padding: '6px 10px', marginBottom: 8, fontSize: '0.75rem', color: '#f59e0b' }}>
+                      {ch.lockedReason === 'free_locked'
+                        ? `Disponible en semana ${ch.releaseWeek}. Hazte Premium para acceso anticipado.`
+                        : `Disponible pronto para usuarios Premium.`}
+                    </div>
+                  )}
 
                   {ch.description && (
                     <p style={{

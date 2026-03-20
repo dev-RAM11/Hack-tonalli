@@ -4,7 +4,7 @@ import { UpdateChapterDto } from './dto/update-chapter.dto';
 export declare class ChaptersController {
     private readonly chaptersService;
     constructor(chaptersService: ChaptersService);
-    findPublished(): Promise<import("./entities/chapter.entity").Chapter[]>;
+    findPublished(req: any): Promise<any[]>;
     findOne(id: string): Promise<import("./entities/chapter.entity").Chapter>;
     getChapterWithProgress(id: string, req: any): Promise<{
         id: string;
@@ -13,6 +13,7 @@ export declare class ChaptersController {
         coverImage: string;
         moduleTag: string;
         xpReward: number;
+        releaseWeek: string;
         modules: {
             id: string;
             type: "lesson" | "final_exam";
@@ -44,6 +45,8 @@ export declare class ChaptersController {
         }[];
         completionPercent: number;
         isPremium: boolean;
+        accessible: boolean;
+        lockedReason: string | null;
     }>;
     getModuleContent(moduleId: string): Promise<{
         id: string;
@@ -115,5 +118,7 @@ export declare class ChaptersController {
     update(id: string, dto: UpdateChapterDto): Promise<import("./entities/chapter.entity").Chapter>;
     updateModule(moduleId: string, data: any): Promise<import("./entities/chapter-module.entity").ChapterModule>;
     togglePublish(id: string): Promise<import("./entities/chapter.entity").Chapter>;
+    releaseThisWeek(id: string): Promise<import("./entities/chapter.entity").Chapter>;
+    setReleaseWeek(id: string, week: string): Promise<import("./entities/chapter.entity").Chapter>;
     remove(id: string): Promise<void>;
 }

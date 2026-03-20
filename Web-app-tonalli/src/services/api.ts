@@ -181,6 +181,16 @@ export const apiService = {
     return res.data;
   },
 
+  adminReleaseThisWeek: async (id: string) => {
+    const res = await api.patch(`/chapters/${id}/release`);
+    return res.data;
+  },
+
+  adminSetReleaseWeek: async (id: string, week: string) => {
+    const res = await api.patch(`/chapters/${id}/release-week`, { week });
+    return res.data;
+  },
+
   adminDeleteChapter: async (id: string) => {
     await api.delete(`/chapters/${id}`);
   },

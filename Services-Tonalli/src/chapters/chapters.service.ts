@@ -63,12 +63,86 @@ export class ChaptersService {
     return this.findOne(saved.id);
   }
 
+  // ── Helpers ──────────────────────────────────────────────────────────────
+
+  getCurrentWeek(): string {
+    const now = new Date();
+    const jan1 = new Date(now.getFullYear(), 0, 1);
+    const days = Math.floor((now.getTime() - jan1.getTime()) / 86400000);
+    const weekNum = Math.ceil((days + jan1.getDay() + 1) / 7);
+    return `${now.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+  }
+
+  getNextWeek(): string {
+    const now = new Date();
+    const next = new Date(now.getTime() + 7 * 86400000);
+    const jan1 = new Date(next.getFullYear(), 0, 1);
+    const days = Math.floor((next.getTime() - jan1.getTime()) / 86400000);
+    const weekNum = Math.ceil((days + jan1.getDay() + 1) / 7);
+    return `${next.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+  }
+
+  // ── Find methods ────────────────────────────────────────────────────────
+
   async findAll(): Promise<Chapter[]> {
     return this.chaptersRepo.find({ relations: ['modules'], order: { order: 'ASC' } });
   }
 
-  async findPublished(): Promise<Chapter[]> {
+  /** Admin: all published (no week filter) */
+  async findAllPublished(): Promise<Chapter[]> {
     return this.chaptersRepo.find({ where: { published: true }, relations: ['modules'], order: { order: 'ASC' } });
+  }
+
+  /** User: published chapters filtered by week based on plan */
+  async findPublishedForUser(userId: string): Promise<any[]> {
+    const user = await this.usersRepo.findOne({ where: { id: userId } });
+    const allPublished = await this.chaptersRepo.find({
+      where: { published: true },
+      relations: ['modules'],
+      order: { order: 'ASC' },
+    });
+
+    const currentWeek = this.getCurrentWeek();
+    const nextWeek = this.getNextWeek();
+
+    return allPublished.map((ch) => {
+      // Determine if chapter is accessible based on releaseWeek
+      let accessible = true;
+      let reason = '';
+
+      if (ch.releaseWeek) {
+        if (user?.isPremium) {
+          // Premium: can access current week + next week (2 chapters/week)
+          accessible = ch.releaseWeek <= nextWeek;
+          if (!accessible) reason = 'premium_future';
+        } else {
+          // Free: can only access chapters released this week or earlier
+          accessible = ch.releaseWeek <= currentWeek;
+          if (!accessible) reason = 'free_locked';
+        }
+      }
+      // Chapters without releaseWeek are always accessible (no restriction)
+
+      return {
+        id: ch.id,
+        title: ch.title,
+        description: ch.description,
+        moduleTag: ch.moduleTag,
+        order: ch.order,
+        published: ch.published,
+        coverImage: ch.coverImage,
+        estimatedMinutes: ch.estimatedMinutes,
+        xpReward: ch.xpReward,
+        releaseWeek: ch.releaseWeek,
+        modules: ch.modules?.sort((a, b) => a.order - b.order),
+        createdAt: ch.createdAt,
+        updatedAt: ch.updatedAt,
+        // Access control
+        accessible,
+        lockedReason: accessible ? null : reason,
+        currentWeek,
+      };
+    });
   }
 
   async findOne(id: string): Promise<Chapter> {
@@ -94,6 +168,18 @@ export class ChaptersService {
     return this.chaptersRepo.save(ch);
   }
 
+  /** Admin: set releaseWeek for a chapter (release it for a specific week) */
+  async setReleaseWeek(id: string, week: string): Promise<Chapter> {
+    const ch = await this.findOne(id);
+    ch.releaseWeek = week;
+    return this.chaptersRepo.save(ch);
+  }
+
+  /** Admin: release chapter for the current week */
+  async releaseThisWeek(id: string): Promise<Chapter> {
+    return this.setReleaseWeek(id, this.getCurrentWeek());
+  }
+
   async updateModule(moduleId: string, data: Partial<ChapterModule>): Promise<ChapterModule> {
     const mod = await this.modulesRepo.findOne({ where: { id: moduleId } });
     if (!mod) throw new NotFoundException('Module not found');
@@ -106,6 +192,21 @@ export class ChaptersService {
   async getChapterWithProgress(chapterId: string, userId: string) {
     const chapter = await this.findOne(chapterId);
     const user = await this.usersRepo.findOne({ where: { id: userId } });
+    // Check week-based access
+    let chapterAccessible = true;
+    let lockedReason: string | null = null;
+    if (chapter.releaseWeek) {
+      const currentWeek = this.getCurrentWeek();
+      const nextWeek = this.getNextWeek();
+      if (user?.isPremium) {
+        chapterAccessible = chapter.releaseWeek <= nextWeek;
+        if (!chapterAccessible) lockedReason = 'Este capitulo se libera en una semana futura.';
+      } else {
+        chapterAccessible = chapter.releaseWeek <= currentWeek;
+        if (!chapterAccessible) lockedReason = 'Este capitulo aun no esta disponible para tu plan. Se libera la semana ' + chapter.releaseWeek + '.';
+      }
+    }
+
     const allProgress = await this.progressRepo.find({ where: { chapterId, userId } });
     const progressMap = new Map(allProgress.map((p) => [p.moduleId, p]));
 
@@ -180,9 +281,12 @@ export class ChaptersService {
       coverImage: chapter.coverImage,
       moduleTag: chapter.moduleTag,
       xpReward: chapter.xpReward,
-      modules: modulesData,
-      completionPercent: Math.round((completedCount / 4) * 100),
+      releaseWeek: chapter.releaseWeek,
+      modules: chapterAccessible ? modulesData : [], // Don't send module data if locked
+      completionPercent: chapterAccessible ? Math.round((completedCount / 4) * 100) : 0,
       isPremium: user?.isPremium || false,
+      accessible: chapterAccessible,
+      lockedReason,
     };
   }
 

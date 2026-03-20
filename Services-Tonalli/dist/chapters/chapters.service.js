@@ -53,11 +53,70 @@ let ChaptersService = class ChaptersService {
         }
         return this.findOne(saved.id);
     }
+    getCurrentWeek() {
+        const now = new Date();
+        const jan1 = new Date(now.getFullYear(), 0, 1);
+        const days = Math.floor((now.getTime() - jan1.getTime()) / 86400000);
+        const weekNum = Math.ceil((days + jan1.getDay() + 1) / 7);
+        return `${now.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+    }
+    getNextWeek() {
+        const now = new Date();
+        const next = new Date(now.getTime() + 7 * 86400000);
+        const jan1 = new Date(next.getFullYear(), 0, 1);
+        const days = Math.floor((next.getTime() - jan1.getTime()) / 86400000);
+        const weekNum = Math.ceil((days + jan1.getDay() + 1) / 7);
+        return `${next.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+    }
     async findAll() {
         return this.chaptersRepo.find({ relations: ['modules'], order: { order: 'ASC' } });
     }
-    async findPublished() {
+    async findAllPublished() {
         return this.chaptersRepo.find({ where: { published: true }, relations: ['modules'], order: { order: 'ASC' } });
+    }
+    async findPublishedForUser(userId) {
+        const user = await this.usersRepo.findOne({ where: { id: userId } });
+        const allPublished = await this.chaptersRepo.find({
+            where: { published: true },
+            relations: ['modules'],
+            order: { order: 'ASC' },
+        });
+        const currentWeek = this.getCurrentWeek();
+        const nextWeek = this.getNextWeek();
+        return allPublished.map((ch) => {
+            let accessible = true;
+            let reason = '';
+            if (ch.releaseWeek) {
+                if (user?.isPremium) {
+                    accessible = ch.releaseWeek <= nextWeek;
+                    if (!accessible)
+                        reason = 'premium_future';
+                }
+                else {
+                    accessible = ch.releaseWeek <= currentWeek;
+                    if (!accessible)
+                        reason = 'free_locked';
+                }
+            }
+            return {
+                id: ch.id,
+                title: ch.title,
+                description: ch.description,
+                moduleTag: ch.moduleTag,
+                order: ch.order,
+                published: ch.published,
+                coverImage: ch.coverImage,
+                estimatedMinutes: ch.estimatedMinutes,
+                xpReward: ch.xpReward,
+                releaseWeek: ch.releaseWeek,
+                modules: ch.modules?.sort((a, b) => a.order - b.order),
+                createdAt: ch.createdAt,
+                updatedAt: ch.updatedAt,
+                accessible,
+                lockedReason: accessible ? null : reason,
+                currentWeek,
+            };
+        });
     }
     async findOne(id) {
         const ch = await this.chaptersRepo.findOne({ where: { id }, relations: ['modules'] });
@@ -80,6 +139,14 @@ let ChaptersService = class ChaptersService {
         ch.published = !ch.published;
         return this.chaptersRepo.save(ch);
     }
+    async setReleaseWeek(id, week) {
+        const ch = await this.findOne(id);
+        ch.releaseWeek = week;
+        return this.chaptersRepo.save(ch);
+    }
+    async releaseThisWeek(id) {
+        return this.setReleaseWeek(id, this.getCurrentWeek());
+    }
     async updateModule(moduleId, data) {
         const mod = await this.modulesRepo.findOne({ where: { id: moduleId } });
         if (!mod)
@@ -90,6 +157,22 @@ let ChaptersService = class ChaptersService {
     async getChapterWithProgress(chapterId, userId) {
         const chapter = await this.findOne(chapterId);
         const user = await this.usersRepo.findOne({ where: { id: userId } });
+        let chapterAccessible = true;
+        let lockedReason = null;
+        if (chapter.releaseWeek) {
+            const currentWeek = this.getCurrentWeek();
+            const nextWeek = this.getNextWeek();
+            if (user?.isPremium) {
+                chapterAccessible = chapter.releaseWeek <= nextWeek;
+                if (!chapterAccessible)
+                    lockedReason = 'Este capitulo se libera en una semana futura.';
+            }
+            else {
+                chapterAccessible = chapter.releaseWeek <= currentWeek;
+                if (!chapterAccessible)
+                    lockedReason = 'Este capitulo aun no esta disponible para tu plan. Se libera la semana ' + chapter.releaseWeek + '.';
+            }
+        }
         const allProgress = await this.progressRepo.find({ where: { chapterId, userId } });
         const progressMap = new Map(allProgress.map((p) => [p.moduleId, p]));
         let prevModuleCompleted = true;
@@ -156,9 +239,12 @@ let ChaptersService = class ChaptersService {
             coverImage: chapter.coverImage,
             moduleTag: chapter.moduleTag,
             xpReward: chapter.xpReward,
-            modules: modulesData,
-            completionPercent: Math.round((completedCount / 4) * 100),
+            releaseWeek: chapter.releaseWeek,
+            modules: chapterAccessible ? modulesData : [],
+            completionPercent: chapterAccessible ? Math.round((completedCount / 4) * 100) : 0,
             isPremium: user?.isPremium || false,
+            accessible: chapterAccessible,
+            lockedReason,
         };
     }
     async completeInfoModule(moduleId, userId) {

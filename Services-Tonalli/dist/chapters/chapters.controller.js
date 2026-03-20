@@ -25,8 +25,8 @@ let ChaptersController = class ChaptersController {
     constructor(chaptersService) {
         this.chaptersService = chaptersService;
     }
-    findPublished() {
-        return this.chaptersService.findPublished();
+    findPublished(req) {
+        return this.chaptersService.findPublishedForUser(req.user.id);
     }
     findOne(id) {
         return this.chaptersService.findOne(id);
@@ -70,6 +70,12 @@ let ChaptersController = class ChaptersController {
     togglePublish(id) {
         return this.chaptersService.togglePublish(id);
     }
+    releaseThisWeek(id) {
+        return this.chaptersService.releaseThisWeek(id);
+    }
+    setReleaseWeek(id, week) {
+        return this.chaptersService.setReleaseWeek(id, week);
+    }
     remove(id) {
         return this.chaptersService.remove(id);
     }
@@ -78,8 +84,9 @@ exports.ChaptersController = ChaptersController;
 __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Get)(),
+    __param(0, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], ChaptersController.prototype, "findPublished", null);
 __decorate([
@@ -210,6 +217,25 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], ChaptersController.prototype, "togglePublish", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)('admin'),
+    (0, common_1.Patch)(':id/release'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], ChaptersController.prototype, "releaseThisWeek", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)('admin'),
+    (0, common_1.Patch)(':id/release-week'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)('week')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], ChaptersController.prototype, "setReleaseWeek", null);
 __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     (0, roles_decorator_1.Roles)('admin'),

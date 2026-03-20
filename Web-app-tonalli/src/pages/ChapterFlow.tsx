@@ -133,6 +133,30 @@ export function ChapterFlow() {
     return <div className="min-h-screen flex items-center justify-center bg-gray-900 text-red-400">Capitulo no encontrado</div>;
   }
 
+  // Chapter locked by week restriction
+  if (chapter.accessible === false) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <div className="text-6xl mb-4">{'\uD83D\uDD12'}</div>
+          <h2 className="text-white text-2xl font-bold mb-2">Capitulo bloqueado</h2>
+          <p className="text-gray-400 mb-4">{chapter.lockedReason}</p>
+          {chapter.releaseWeek && (
+            <p className="text-yellow-400 text-sm mb-6">Semana de liberacion: {chapter.releaseWeek}</p>
+          )}
+          {!chapter.isPremium && (
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 mb-6">
+              <p className="text-yellow-400 font-bold text-sm">Los usuarios Premium acceden a 2 capitulos por semana</p>
+            </div>
+          )}
+          <button onClick={() => navigate('/chapters')} className="bg-gray-700 text-white py-2 px-6 rounded-xl hover:bg-gray-600">
+            &larr; Volver a capitulos
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (showConversion) {
     return (
       <ConversionScreen

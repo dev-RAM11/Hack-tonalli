@@ -32,6 +32,10 @@ export interface Chapter {
   modules?: ChapterModuleData[];
   createdAt: string;
   updatedAt: string;
+  // Week access control
+  accessible?: boolean;
+  lockedReason?: string | null;
+  currentWeek?: string;
 }
 
 export interface ModuleSections {
@@ -64,9 +68,12 @@ export interface ChapterWithProgress {
   coverImage?: string;
   moduleTag?: string;
   xpReward: number;
+  releaseWeek?: string;
   modules: ChapterModuleData[];
   completionPercent: number;
   isPremium: boolean;
+  accessible?: boolean;
+  lockedReason?: string | null;
 }
 
 export interface NFTCertificate {

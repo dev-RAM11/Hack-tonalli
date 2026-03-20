@@ -15,11 +15,11 @@ export class ChaptersController {
 
   // ── Public (any authenticated user) ──────────────────────────────────────
 
-  /** GET /api/chapters — returns only published chapters */
+  /** GET /api/chapters — returns published chapters filtered by user plan + week */
   @UseGuards(JwtAuthGuard)
   @Get()
-  findPublished() {
-    return this.chaptersService.findPublished();
+  findPublished(@Req() req: any) {
+    return this.chaptersService.findPublishedForUser(req.user.id);
   }
 
   /** GET /api/chapters/:id — returns a single chapter with modules */
@@ -139,6 +139,22 @@ export class ChaptersController {
   @Patch(':id/publish')
   togglePublish(@Param('id') id: string) {
     return this.chaptersService.togglePublish(id);
+  }
+
+  /** PATCH /api/chapters/:id/release — release chapter for current week */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @Patch(':id/release')
+  releaseThisWeek(@Param('id') id: string) {
+    return this.chaptersService.releaseThisWeek(id);
+  }
+
+  /** PATCH /api/chapters/:id/release-week — set specific release week */
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @Patch(':id/release-week')
+  setReleaseWeek(@Param('id') id: string, @Body('week') week: string) {
+    return this.chaptersService.setReleaseWeek(id, week);
   }
 
   /** DELETE /api/chapters/:id — delete chapter */

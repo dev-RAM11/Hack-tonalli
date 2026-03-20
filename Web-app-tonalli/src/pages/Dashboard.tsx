@@ -165,9 +165,11 @@ export function Dashboard() {
   const { user, setUser } = useAuthStore();
   const { modules, loadModules, completedLessons, dailyStreak } = useProgressStore();
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [chapters, setChapters] = useState<any[]>([]);
 
   useEffect(() => {
     loadModules();
+    apiService.getChapters().then(setChapters).catch(() => {});
 
     // Load real profile data
     apiService.getProfile().then((profile) => {
@@ -206,7 +208,8 @@ export function Dashboard() {
   const xpProgress = ((totalXp % 500) / 500) * 100;
   const streak = user.streak || dailyStreak || 0;
 
-  // Find first available lesson for daily challenge
+  // Find first accessible chapter for daily challenge
+  const firstAvailableChapter = chapters.find((c: any) => c.accessible !== false);
   const firstAvailable = modules.flatMap((m) => m.lessons).find((l) => l.status === 'available');
 
   return (
@@ -279,7 +282,7 @@ export function Dashboard() {
           {/* Main path */}
           <div>
             {/* Daily challenge */}
-            {firstAvailable && (
+            {firstAvailableChapter && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -300,30 +303,92 @@ export function Dashboard() {
                   <img src="/characters/xollo.png" alt="Xollo" style={{ width: 50, height: 50, objectFit: 'contain' }} className="float-animation" />
                   <div>
                     <div style={{ fontWeight: 900, fontSize: '1.1rem' }}>Desafio Diario</div>
-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Completa 1 leccion hoy para mantener tu racha</div>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Completa 1 modulo hoy para mantener tu racha</div>
                   </div>
                 </div>
-                <Link to={`/learn/${firstAvailable.id}`} className="btn btn-primary">
+                <Link to={`/chapters/${firstAvailableChapter.id}`} className="btn btn-primary">
                   Acepto el reto! <ChevronRight size={16} />
                 </Link>
               </motion.div>
             )}
 
-            {/* Module path */}
+            {/* Chapters path */}
             <h2 style={{ fontSize: '1.4rem', fontWeight: 900, marginBottom: 8, textAlign: 'center' }}>Tu camino de aprendizaje</h2>
-            <p style={{ color: 'var(--text-muted)', textAlign: 'center', marginBottom: 16, fontSize: '0.9rem' }}>
-              {completedLessons.length} lecciones completadas
+            <p style={{ color: 'var(--text-muted)', textAlign: 'center', marginBottom: 24, fontSize: '0.9rem' }}>
+              {chapters.filter((c: any) => c.accessible).length} de {chapters.length} capitulos disponibles
+              {!user?.isPremium && <span style={{ color: '#f59e0b' }}> · Free: 1 por semana</span>}
             </p>
 
-            {modules.length === 0 && (
+            {chapters.length === 0 && (
               <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
-                Cargando modulos...
+                Cargando capitulos...
               </div>
             )}
 
-            {modules.map((module) => (
-              <ModuleSection key={module.id} module={module} />
-            ))}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {chapters.map((ch: any, i: number) => (
+                <motion.div
+                  key={ch.id}
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.08 }}
+                >
+                  <Link
+                    to={ch.accessible !== false ? `/chapters/${ch.id}` : '#'}
+                    style={{ textDecoration: 'none', color: 'inherit' }}
+                    onClick={(e) => { if (ch.accessible === false) e.preventDefault(); }}
+                  >
+                    <div
+                      className="card"
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 16, padding: '16px 20px',
+                        opacity: ch.accessible === false ? 0.45 : 1,
+                        cursor: ch.accessible === false ? 'not-allowed' : 'pointer',
+                        border: ch.accessible === false ? '1px solid var(--border)' : '1px solid rgba(46,139,63,0.3)',
+                        transition: 'border-color 0.2s',
+                      }}
+                    >
+                      {/* Number / lock */}
+                      <div style={{
+                        width: 48, height: 48, borderRadius: '50%',
+                        background: ch.accessible === false
+                          ? 'var(--border)'
+                          : 'linear-gradient(135deg, var(--primary), var(--accent))',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontWeight: 900, fontSize: '1.1rem', color: ch.accessible === false ? 'var(--text-muted)' : '#fff',
+                        flexShrink: 0,
+                      }}>
+                        {ch.accessible === false ? <Lock size={20} /> : ch.order}
+                      </div>
+
+                      {/* Info */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 800, fontSize: '1rem', marginBottom: 2 }}>{ch.title}</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                          {ch.moduleTag && <span style={{ color: 'var(--accent)' }}>{ch.moduleTag}</span>}
+                          <span>{ch.estimatedMinutes || 15} min</span>
+                          <span>+{ch.xpReward} XP</span>
+                          {ch.releaseWeek && <span>Semana {ch.releaseWeek}</span>}
+                        </div>
+                        {ch.accessible === false && (
+                          <div style={{ fontSize: '0.75rem', color: '#f59e0b', marginTop: 4 }}>
+                            {ch.lockedReason === 'free_locked'
+                              ? 'Hazte Premium para acceso anticipado'
+                              : 'Disponible proximamente'}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Arrow */}
+                      {ch.accessible !== false && (
+                        <ChevronRight size={20} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+                      )}
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
           </div>
 
           {/* Right sidebar */}

@@ -2,134 +2,119 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
-import { mockModules } from '../data/mockData';
-import type { Lesson as LessonType, LessonContent } from '../types';
+import { apiService } from '../services/api';
 import { CharacterReaction } from '../components/CharacterReaction';
 import { useProgressStore } from '../stores/progressStore';
 
-function ContentBlock({ content, isVisible }: { content: LessonContent; isVisible: boolean }) {
-  return (
-    <AnimatePresence>
-      {isVisible && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          {content.type === 'text' && (
-            <p style={{ fontSize: '1.1rem', lineHeight: 1.8, color: 'var(--text)', marginBottom: 0 }}>
-              {content.content}
-            </p>
-          )}
-          {content.type === 'highlight' && (
-            <div style={{
-              background: 'rgba(255,107,53,0.1)',
-              border: '2px solid rgba(255,107,53,0.3)',
-              borderRadius: 12,
-              padding: '16px 20px',
-              fontSize: '1.05rem',
-              lineHeight: 1.8,
-            }}>
-              {content.highlight ? (
-                content.content.split(content.highlight).map((part, i, arr) =>
-                  i < arr.length - 1 ? (
-                    <span key={i}>
-                      {part}
-                      <strong style={{ color: 'var(--primary)', background: 'rgba(255,107,53,0.15)', padding: '2px 6px', borderRadius: 4 }}>
-                        {content.highlight}
-                      </strong>
-                    </span>
-                  ) : part
-                )
-              ) : content.content}
-            </div>
-          )}
-          {content.type === 'tip' && (
-            <div style={{
-              background: 'rgba(255,215,0,0.1)',
-              border: '2px solid rgba(255,215,0,0.3)',
-              borderRadius: 12,
-              padding: '16px 20px',
-              fontSize: '1rem',
-              lineHeight: 1.8,
-              fontWeight: 700,
-              color: 'var(--accent)',
-            }}>
-              {content.content}
-            </div>
-          )}
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
+interface Section {
+  title: string;
+  text: string;
+  icon?: string;
+}
+
+interface KeyTerm {
+  term: string;
+  definition: string;
+}
+
+interface LessonData {
+  id: string;
+  title: string;
+  description: string;
+  moduleId: string;
+  moduleName: string;
+  character: string;
+  characterDialogue: string;
+  xpReward: number;
+  xlmReward: string;
+  content: {
+    sections: Section[];
+    keyTerms: KeyTerm[];
+  } | null;
 }
 
 export function Lesson() {
   const { lessonId } = useParams<{ lessonId: string }>();
   const navigate = useNavigate();
   const { markLessonComplete } = useProgressStore();
-  const [currentContentIndex, setCurrentContentIndex] = useState(0);
-  const [lesson, setLesson] = useState<LessonType | null>(null);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [lesson, setLesson] = useState<LessonData | null>(null);
+  const [loading, setLoading] = useState(true);
   const [characterMood, setCharacterMood] = useState<'idle' | 'happy' | 'excited' | 'thinking'>('idle');
-  const [characterMessage, setCharacterMessage] = useState('¡Vamos a aprender algo increíble hoy!');
+  const [characterMessage, setCharacterMessage] = useState('');
 
   useEffect(() => {
-    // Find lesson in mock data
-    for (const mod of mockModules) {
-      const found = mod.lessons.find((l) => l.id === lessonId);
-      if (found) {
-        setLesson(found);
-        break;
+    if (!lessonId) return;
+    setLoading(true);
+    apiService.getLesson(lessonId).then((data) => {
+      // Parse content if it's a string
+      let content = data.content;
+      if (typeof content === 'string') {
+        try { content = JSON.parse(content); } catch { content = null; }
       }
-    }
+      setLesson({ ...data, content });
+      setCharacterMessage(data.characterDialogue || 'Vamos a aprender algo increible hoy!');
+      setLoading(false);
+    }).catch(() => {
+      setLesson(null);
+      setLoading(false);
+    });
   }, [lessonId]);
 
   useEffect(() => {
-    if (!lesson) return;
+    if (!lesson?.content?.sections) return;
     const messages = [
-      '¡Vamos a aprender algo increíble hoy!',
-      '¡Muy bien! Sigue leyendo con atención.',
-      '¡Esto es importante! No lo olvides.',
-      '¡Ya casi terminas! ¡Tú puedes!',
+      lesson.characterDialogue || 'Vamos a aprender!',
+      'Muy bien! Sigue leyendo con atencion.',
+      'Esto es importante! No lo olvides.',
+      'Ya casi terminas! Tu puedes!',
+      'Excelente! Has aprendido mucho hoy.',
     ];
-    const idx = Math.min(currentContentIndex, messages.length - 1);
+    const idx = Math.min(currentStep, messages.length - 1);
     setCharacterMessage(messages[idx]);
-    setCharacterMood(currentContentIndex === 0 ? 'idle' : 'happy');
-  }, [currentContentIndex, lesson]);
+    setCharacterMood(currentStep === 0 ? 'idle' : 'happy');
+  }, [currentStep, lesson]);
 
-  if (!lesson) {
+  if (loading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '3rem', marginBottom: 16 }}>😕</div>
-          <h2>Lección no encontrada</h2>
-          <Link to="/dashboard" className="btn btn-primary" style={{ marginTop: 16 }}>← Volver al inicio</Link>
+          <img src="/characters/chima.png" alt="Chima" className="float-animation" style={{ width: 100, height: 100, objectFit: 'contain', marginBottom: 16 }} />
+          <div style={{ fontWeight: 700, color: 'var(--text-muted)' }}>Cargando leccion...</div>
         </div>
       </div>
     );
   }
 
-  const progress = ((currentContentIndex) / lesson.content.length) * 100;
-  const isLastContent = currentContentIndex >= lesson.content.length - 1;
+  if (!lesson) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '3rem', marginBottom: 16 }}>?</div>
+          <h2>Leccion no encontrada</h2>
+          <Link to="/dashboard" className="btn btn-primary" style={{ marginTop: 16 }}>Volver al inicio</Link>
+        </div>
+      </div>
+    );
+  }
+
+  const sections = lesson.content?.sections || [];
+  const keyTerms = lesson.content?.keyTerms || [];
+  // Total steps = sections + keyTerms (as 1 step) + final
+  const totalSteps = sections.length + (keyTerms.length > 0 ? 1 : 0);
+  const progress = totalSteps > 0 ? ((currentStep) / totalSteps) * 100 : 0;
+  const isLast = currentStep >= totalSteps - 1;
+  const character = (lesson.character || 'chima') as 'chima' | 'alli' | 'xollo';
 
   const handleContinue = () => {
-    if (!isLastContent) {
-      setCurrentContentIndex((i) => i + 1);
+    if (!isLast) {
+      setCurrentStep((i) => i + 1);
     } else {
-      // Complete lesson
       markLessonComplete(lesson.id);
       setCharacterMood('excited');
-      // Navigate to quiz if there's one, else dashboard
-      const moduleLesson = mockModules
-        .flatMap((m) => m.lessons)
-        .find((l) => l.moduleId === lesson.moduleId && l.type === 'quiz' && l.order === lesson.order + 1);
-
+      // Go to quiz
       setTimeout(() => {
-        if (moduleLesson) {
-          navigate(`/quiz/${moduleLesson.id}`);
-        } else {
-          navigate('/dashboard');
-        }
+        navigate(`/quiz/${lesson.id}`);
       }, 500);
     }
   };
@@ -152,7 +137,7 @@ export function Lesson() {
           </div>
         </div>
         <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-          {currentContentIndex}/{lesson.content.length}
+          {currentStep + 1}/{totalSteps}
         </div>
       </div>
 
@@ -161,7 +146,7 @@ export function Lesson() {
         {/* Character */}
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 32 }}>
           <CharacterReaction
-            character="chima"
+            character={character}
             mood={characterMood}
             message={characterMessage}
             size="md"
@@ -174,29 +159,68 @@ export function Lesson() {
           animate={{ opacity: 1 }}
           style={{ marginBottom: 32, textAlign: 'center' }}
         >
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: 1, marginBottom: 8 }}>
+            {lesson.moduleName}
+          </div>
           <h1 style={{ fontSize: '1.8rem', fontWeight: 900, marginBottom: 8 }}>{lesson.title}</h1>
           <p style={{ color: 'var(--text-muted)' }}>{lesson.description}</p>
         </motion.div>
 
-        {/* Content blocks - show all up to current */}
+        {/* Content blocks */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20, marginBottom: 40 }}>
-          {lesson.content.slice(0, currentContentIndex + 1).map((content) => (
-            <ContentBlock
-              key={content.id}
-              content={content}
-              isVisible={true}
-            />
+          {sections.slice(0, currentStep + 1).map((section, i) => (
+            <AnimatePresence key={i}>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="card"
+                style={{ padding: '24px 28px' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                  {section.icon && <span style={{ fontSize: '1.8rem' }}>{section.icon}</span>}
+                  <h3 style={{ fontWeight: 900, fontSize: '1.15rem' }}>{section.title}</h3>
+                </div>
+                <p style={{ fontSize: '1.05rem', lineHeight: 1.8, color: 'var(--text-muted)' }}>
+                  {section.text}
+                </p>
+              </motion.div>
+            </AnimatePresence>
           ))}
+
+          {/* Key terms step */}
+          {keyTerms.length > 0 && currentStep >= sections.length && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              style={{
+                background: 'rgba(245,197,24,0.1)',
+                border: '2px solid rgba(245,197,24,0.3)',
+                borderRadius: 16,
+                padding: '24px 28px',
+              }}
+            >
+              <h3 style={{ fontWeight: 900, marginBottom: 16, color: 'var(--accent)' }}>Terminos clave</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {keyTerms.map((kt, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 12 }}>
+                    <span style={{ fontWeight: 900, color: 'var(--accent)', minWidth: 120 }}>{kt.term}</span>
+                    <span style={{ color: 'var(--text-muted)' }}>{kt.definition}</span>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
         </div>
 
         {/* Rewards preview */}
-        {isLastContent && (
+        {isLast && (
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             style={{
-              background: 'rgba(0,200,150,0.1)',
-              border: '2px solid rgba(0,200,150,0.3)',
+              background: 'rgba(46,139,63,0.1)',
+              border: '2px solid rgba(46,139,63,0.3)',
               borderRadius: 16,
               padding: 20,
               display: 'flex',
@@ -205,12 +229,12 @@ export function Lesson() {
               marginBottom: 24,
             }}
           >
-            <span style={{ fontSize: '2rem' }}>🎉</span>
+            <img src="/characters/chima.png" alt="" style={{ width: 40, height: 40, objectFit: 'contain' }} />
             <div>
-              <div style={{ fontWeight: 900, color: 'var(--success)' }}>¡Lección completada!</div>
+              <div style={{ fontWeight: 900, color: 'var(--success)' }}>Leccion completada!</div>
               <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                Ganas <strong style={{ color: 'var(--accent)' }}>+{lesson.xpReward} XP</strong>
-                {lesson.xlmReward > 0 && <span> y <strong style={{ color: 'var(--success)' }}>+{lesson.xlmReward} XLM</strong></span>}
+                Ahora toma el quiz para ganar <strong style={{ color: 'var(--accent)' }}>+{lesson.xpReward} XP</strong>
+                {' '}y <strong style={{ color: 'var(--success)' }}>+{lesson.xlmReward} XLM</strong>
               </div>
             </div>
           </motion.div>
@@ -224,7 +248,7 @@ export function Lesson() {
           whileTap={{ scale: 0.98 }}
           style={{ marginBottom: 40 }}
         >
-          {isLastContent ? '🏆 ¡Finalizar lección!' : '¡Continuar! →'}
+          {isLast ? 'Tomar el Quiz!' : 'Continuar'}
         </motion.button>
       </div>
     </div>

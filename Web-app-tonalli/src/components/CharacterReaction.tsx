@@ -10,10 +10,10 @@ interface CharacterReactionProps {
   size?: 'sm' | 'md' | 'lg';
 }
 
-const CHARACTER_EMOJIS: Record<Character, string> = {
-  chima: '🎺',
-  alli: '🎸',
-  xollo: '🐕',
+const CHARACTER_IMAGES: Record<Character, string> = {
+  chima: '/characters/chima.png',
+  alli: '/characters/alli.png',
+  xollo: '/characters/xollo.png',
 };
 
 const CHARACTER_NAMES: Record<Character, string> = {
@@ -22,75 +22,141 @@ const CHARACTER_NAMES: Record<Character, string> = {
   xollo: 'Xollo',
 };
 
-const MOOD_ANIMATIONS: Record<Mood, string> = {
-  idle: 'float-slow',
-  happy: 'bounce-in',
-  excited: 'pop-animation',
-  thinking: 'float-animation',
-  wrong: 'wiggle-animation',
-  celebrate: 'bounce-in',
+const CHARACTER_ROLES: Record<Character, string> = {
+  chima: 'Tu guia',
+  alli: 'El retador',
+  xollo: 'Guardian de rachas',
+};
+
+const MOOD_CLASSES: Record<Mood, string> = {
+  idle: 'char-idle',
+  happy: 'char-happy',
+  excited: 'char-excited',
+  thinking: 'char-thinking',
+  wrong: 'char-wrong',
+  celebrate: 'char-celebrate',
+};
+
+const MOOD_VARIANTS: Record<Mood, object> = {
+  idle: {
+    y: [0, -8, 0],
+    rotate: [0, 1, -1, 0],
+    transition: { duration: 3, repeat: Infinity, ease: 'easeInOut' },
+  },
+  happy: {
+    scale: [0.8, 1.1, 0.95, 1],
+    y: [0, -15, 0],
+    transition: { duration: 0.6, ease: 'easeOut' },
+  },
+  excited: {
+    scale: [1, 1.15, 0.9, 1.1, 1],
+    rotate: [0, -8, 8, -5, 0],
+    y: [0, -20, -5, -15, 0],
+    transition: { duration: 0.8, ease: 'easeOut' },
+  },
+  thinking: {
+    rotate: [0, -5, 5, -3, 0],
+    scale: [1, 0.97, 1.02, 1],
+    transition: { duration: 2.5, repeat: Infinity, ease: 'easeInOut' },
+  },
+  wrong: {
+    x: [0, -12, 12, -8, 8, -4, 0],
+    rotate: [0, -5, 5, -3, 3, 0],
+    transition: { duration: 0.5, ease: 'easeInOut' },
+  },
+  celebrate: {
+    y: [0, -25, 0, -18, 0, -10, 0],
+    scale: [1, 1.2, 1, 1.15, 1, 1.08, 1],
+    rotate: [0, -10, 10, -8, 8, -3, 0],
+    transition: { duration: 1.2, ease: 'easeOut' },
+  },
+};
+
+const IMAGE_SIZES: Record<string, { width: number; height: number }> = {
+  sm: { width: 80, height: 80 },
+  md: { width: 130, height: 130 },
+  lg: { width: 200, height: 200 },
 };
 
 export function CharacterReaction({ character, mood, message, size = 'md' }: CharacterReactionProps) {
-  const emoji = CHARACTER_EMOJIS[character];
+  const imageSrc = CHARACTER_IMAGES[character];
   const name = CHARACTER_NAMES[character];
-  const animClass = MOOD_ANIMATIONS[mood];
-
-  const fontSizes = { sm: '2rem', md: '3.5rem', lg: '5rem' };
-  const fontSize = fontSizes[size];
+  const role = CHARACTER_ROLES[character];
+  const moodClass = MOOD_CLASSES[mood];
+  const moodVariant = MOOD_VARIANTS[mood];
+  const imgSize = IMAGE_SIZES[size];
 
   return (
     <AnimatePresence mode="wait">
       <motion.div
         key={`${character}-${mood}`}
-        initial={{ scale: 0.8, opacity: 0 }}
+        initial={{ scale: 0.5, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.8, opacity: 0 }}
-        transition={{ duration: 0.3, type: 'spring', stiffness: 200 }}
-        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}
+        exit={{ scale: 0.5, opacity: 0 }}
+        transition={{ duration: 0.35, type: 'spring', stiffness: 180, damping: 15 }}
+        className="character-reaction-wrapper"
       >
-        <span
-          className={animClass}
-          style={{
-            fontSize,
-            display: 'inline-block',
-            filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.4))',
-          }}
-        >
-          {emoji}
-        </span>
+        {/* Glow ring behind character */}
+        <div className={`character-glow character-glow--${character} ${moodClass}`} />
 
+        {/* Character image with mood animation */}
+        <motion.div
+          className={`character-container ${moodClass}`}
+          animate={moodVariant}
+        >
+          <img
+            src={imageSrc}
+            alt={name}
+            width={imgSize.width}
+            height={imgSize.height}
+            className="character-img"
+            draggable={false}
+          />
+
+          {/* Mood particles */}
+          {(mood === 'celebrate' || mood === 'excited') && (
+            <div className="character-particles">
+              {[...Array(6)].map((_, i) => (
+                <span key={i} className="particle" style={{ '--i': i } as React.CSSProperties} />
+              ))}
+            </div>
+          )}
+
+          {mood === 'happy' && (
+            <div className="character-sparkles">
+              {[...Array(3)].map((_, i) => (
+                <span key={i} className="sparkle" style={{ '--i': i } as React.CSSProperties} />
+              ))}
+            </div>
+          )}
+
+          {mood === 'thinking' && (
+            <div className="character-dots">
+              <span className="dot" />
+              <span className="dot" />
+              <span className="dot" />
+            </div>
+          )}
+
+          {mood === 'wrong' && (
+            <div className="character-sweat">
+              <span className="sweat-drop" />
+            </div>
+          )}
+        </motion.div>
+
+        {/* Speech bubble */}
         {message && (
           <motion.div
-            initial={{ y: 10, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            style={{
-              background: 'var(--card)',
-              border: '2px solid var(--border)',
-              borderRadius: 12,
-              padding: '10px 16px',
-              maxWidth: 220,
-              textAlign: 'center',
-              fontSize: '0.9rem',
-              fontWeight: 700,
-              position: 'relative',
-            }}
+            initial={{ y: 12, opacity: 0, scale: 0.9 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            transition={{ delay: 0.25, type: 'spring', stiffness: 200 }}
+            className="character-bubble"
           >
-            <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', display: 'block', marginBottom: 2 }}>{name}</span>
-            {message}
-            {/* Speech bubble tail */}
-            <div style={{
-              position: 'absolute',
-              top: -8,
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: 0,
-              height: 0,
-              borderLeft: '8px solid transparent',
-              borderRight: '8px solid transparent',
-              borderBottom: '8px solid var(--border)',
-            }} />
+            <div className="bubble-tail" />
+            <span className="bubble-name">{name}</span>
+            <span className="bubble-role">{role}</span>
+            <p className="bubble-message">{message}</p>
           </motion.div>
         )}
       </motion.div>

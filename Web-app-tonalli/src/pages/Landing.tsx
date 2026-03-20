@@ -41,21 +41,37 @@ export function Landing() {
           borderRadius: '50%', pointerEvents: 'none',
         }} />
 
-        {/* Logo / Characters */}
+        {/* Characters Hero Trio */}
         <motion.div
-          style={{ display: 'flex', gap: 24, marginBottom: 32, alignItems: 'flex-end' }}
+          style={{ display: 'flex', gap: 16, marginBottom: 32, alignItems: 'flex-end' }}
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.7, delay: 0.2 }}
         >
-          <span className="float-delay" style={{ fontSize: '4rem', filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.5))' }}>🎸</span>
-          <img
-            src="/logo.png"
-            alt="Tonalli"
-            className="float-slow"
-            style={{ width: 160, height: 160, objectFit: 'contain', filter: 'drop-shadow(0 12px 24px rgba(46,139,63,0.5))' }}
+          <motion.img
+            src="/characters/alli.png"
+            alt="Alli"
+            className="float-delay"
+            style={{ width: 130, height: 130, objectFit: 'contain', filter: 'drop-shadow(0 8px 20px rgba(245,197,24,0.5))' }}
+            whileHover={{ scale: 1.1, rotate: -5 }}
+            draggable={false}
           />
-          <span className="float-delay2" style={{ fontSize: '4rem', filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.5))' }}>🎺</span>
+          <motion.img
+            src="/characters/xollo.png"
+            alt="Xollo"
+            className="float-slow"
+            style={{ width: 170, height: 170, objectFit: 'contain', filter: 'drop-shadow(0 12px 28px rgba(155,89,182,0.5))' }}
+            whileHover={{ scale: 1.1 }}
+            draggable={false}
+          />
+          <motion.img
+            src="/characters/chima.png"
+            alt="Chima"
+            className="float-delay2"
+            style={{ width: 130, height: 130, objectFit: 'contain', filter: 'drop-shadow(0 8px 20px rgba(200,39,26,0.5))' }}
+            whileHover={{ scale: 1.1, rotate: 5 }}
+            draggable={false}
+          />
         </motion.div>
 
         <motion.div {...fadeUp} initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.7 }}>
@@ -172,11 +188,17 @@ export function Landing() {
                 <h3 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: 12 }}>{feature.title}</h3>
                 <p style={{ color: 'var(--text-muted)', lineHeight: 1.7, marginBottom: 16 }}>{feature.description}</p>
                 <div style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  display: 'inline-flex', alignItems: 'center', gap: 8,
                   fontSize: '0.85rem', fontWeight: 700, color: feature.color,
-                  background: feature.color + '20', padding: '6px 12px', borderRadius: 20,
+                  background: feature.color + '20', padding: '6px 14px', borderRadius: 20,
                 }}>
-                  {i === 0 ? '🎺' : i === 1 ? '🎸' : '🐕'} {feature.cta}
+                  <img
+                    src={`/characters/${i === 0 ? 'chima' : i === 1 ? 'alli' : 'xollo'}.png`}
+                    alt=""
+                    style={{ width: 24, height: 24, objectFit: 'contain' }}
+                    draggable={false}
+                  />
+                  {feature.cta}
                 </div>
               </motion.div>
             ))}
@@ -200,27 +222,30 @@ export function Landing() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 24 }}>
             {[
               {
-                emoji: '🎺',
+                image: '/characters/chima.png',
                 name: 'Chima',
-                role: 'Guía Maestra',
-                color: '#2E8B3F',
-                description: 'Mariachi de corazón, maestra de blockchain. Chima te explica cada concepto con paciencia y mucho ritmo. ¡Ella nunca te deja atrás!',
+                role: 'Guia Maestra',
+                color: '#C8271A',
+                glowColor: 'rgba(200,39,26,0.4)',
+                description: 'Mariachi de corazon, maestra de blockchain. Chima te explica cada concepto con paciencia y mucho ritmo. Ella nunca te deja atras!',
                 animClass: 'float-animation',
               },
               {
-                emoji: '🎸',
+                image: '/characters/alli.png',
                 name: 'Alli',
                 role: 'Desafiador Pro',
                 color: '#F5C518',
-                description: 'El guitarrista más competitivo del metaverso. Alli te retará constantemente a superar tus récords y mejorar tu racha.',
+                glowColor: 'rgba(245,197,24,0.4)',
+                description: 'El mariachi mas competitivo del metaverso. Alli te retara constantemente a superar tus records y mejorar tu racha.',
                 animClass: 'float-slow',
               },
               {
-                emoji: null,
+                image: '/characters/xollo.png',
                 name: 'Xollo',
-                role: 'Guardián de Racha',
-                color: '#2E8B3F',
-                description: 'El xoloescuincle más leal de la blockchain. Xollo cuida tu racha diaria y se pone triste si la pierdes. ¡No lo decepciones!',
+                role: 'Guardian de Racha',
+                color: '#9B59B6',
+                glowColor: 'rgba(155,89,182,0.4)',
+                description: 'El xoloescuincle mas leal de la blockchain. Xollo cuida tu racha diaria y se pone triste si la pierdes. No lo decepciones!',
                 animClass: 'float-delay',
               },
             ].map((char, i) => (
@@ -232,23 +257,36 @@ export function Landing() {
                 transition={{ delay: i * 0.15 }}
                 className="card"
                 style={{ textAlign: 'center', padding: 32 }}
-                whileHover={{ y: -6, borderColor: char.color + '60' }}
+                whileHover={{ y: -8, borderColor: char.color + '60' }}
               >
-                {char.emoji ? (
-                  <span
-                    className={char.animClass}
-                    style={{ fontSize: '5rem', display: 'block', marginBottom: 16, filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.4))' }}
-                  >
-                    {char.emoji}
-                  </span>
-                ) : (
+                <motion.div
+                  style={{ position: 'relative', display: 'inline-block', marginBottom: 16 }}
+                  whileHover={{ scale: 1.08 }}
+                >
+                  <div style={{
+                    position: 'absolute',
+                    top: '50%', left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    width: 100, height: 100,
+                    borderRadius: '50%',
+                    background: `radial-gradient(circle, ${char.glowColor}, transparent 70%)`,
+                    filter: 'blur(15px)',
+                    pointerEvents: 'none',
+                  }} />
                   <img
-                    src="/logo.png"
-                    alt="Xollo"
+                    src={char.image}
+                    alt={char.name}
                     className={char.animClass}
-                    style={{ width: 120, height: 120, objectFit: 'contain', display: 'block', margin: '0 auto 16px', filter: 'drop-shadow(0 8px 16px rgba(46,139,63,0.5))' }}
+                    draggable={false}
+                    style={{
+                      width: 140,
+                      height: 140,
+                      objectFit: 'contain',
+                      position: 'relative',
+                      filter: `drop-shadow(0 8px 20px ${char.glowColor})`,
+                    }}
                   />
-                )}
+                </motion.div>
                 <h3 style={{ fontSize: '1.6rem', fontWeight: 900, marginBottom: 4 }}>{char.name}</h3>
                 <div className="badge" style={{ background: char.color + '20', color: char.color, marginBottom: 12 }}>
                   {char.role}
@@ -318,16 +356,24 @@ export function Landing() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
-          <div style={{ marginBottom: 24 }}>
+          <div style={{ marginBottom: 24, position: 'relative', display: 'inline-block' }}>
+            <div style={{
+              position: 'absolute', top: '50%', left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 120, height: 120, borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(155,89,182,0.4), transparent 70%)',
+              filter: 'blur(20px)', pointerEvents: 'none',
+            }} />
             <img
-              src="/logo.png"
-              alt="Tonalli"
+              src="/characters/xollo.png"
+              alt="Xollo"
               className="float-slow"
-              style={{ width: 140, height: 140, objectFit: 'contain', filter: 'drop-shadow(0 12px 28px rgba(46,139,63,0.6))' }}
+              style={{ width: 160, height: 160, objectFit: 'contain', position: 'relative', filter: 'drop-shadow(0 12px 28px rgba(155,89,182,0.6))' }}
+              draggable={false}
             />
           </div>
           <h2 style={{ fontSize: '2.8rem', fontWeight: 900, marginBottom: 16 }}>
-            Xollo está esperándote 🔥
+            Xollo esta esperandote
           </h2>
           <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', maxWidth: 480, margin: '0 auto 36px' }}>
             Únete a miles de mexicanos que ya están aprendiendo Web3 y ganando recompensas reales.

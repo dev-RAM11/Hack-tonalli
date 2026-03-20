@@ -250,6 +250,244 @@ body {
 .form-group { display: flex; flex-direction: column; gap: 6px; }
 .form-label { font-weight: 700; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
 
+/* =============================================
+   ANIMATED CHARACTERS SYSTEM
+   ============================================= */
+
+.character-reaction-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+}
+
+/* Character image */
+.character-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.character-img {
+  object-fit: contain;
+  filter: drop-shadow(0 6px 20px rgba(0, 0, 0, 0.5));
+  transition: filter 0.3s ease;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Glow ring behind character */
+.character-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -55%);
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  opacity: 0.35;
+  filter: blur(25px);
+  transition: all 0.5s ease;
+  pointer-events: none;
+}
+.character-glow--chima { background: radial-gradient(circle, #C8271A, transparent 70%); }
+.character-glow--alli { background: radial-gradient(circle, #F5C518, transparent 70%); }
+.character-glow--xollo { background: radial-gradient(circle, #9B59B6, transparent 70%); }
+
+/* Glow intensity per mood */
+.character-glow.char-idle { opacity: 0.2; }
+.character-glow.char-happy { opacity: 0.5; }
+.character-glow.char-excited { opacity: 0.7; width: 150px; height: 150px; }
+.character-glow.char-celebrate { opacity: 0.8; width: 160px; height: 160px; animation: pulse-glow-char 1s ease infinite; }
+.character-glow.char-thinking { opacity: 0.25; }
+.character-glow.char-wrong { opacity: 0.5; background: radial-gradient(circle, var(--danger), transparent 70%) !important; }
+
+@keyframes pulse-glow-char {
+  0%, 100% { opacity: 0.6; transform: translate(-50%, -55%) scale(1); }
+  50% { opacity: 0.9; transform: translate(-50%, -55%) scale(1.15); }
+}
+
+/* --- Mood-specific image effects --- */
+.char-celebrate .character-img { filter: drop-shadow(0 6px 25px rgba(245, 197, 24, 0.6)); }
+.char-excited .character-img { filter: drop-shadow(0 6px 25px rgba(46, 139, 63, 0.5)); }
+.char-happy .character-img { filter: drop-shadow(0 4px 20px rgba(46, 139, 63, 0.4)); }
+.char-wrong .character-img { filter: drop-shadow(0 4px 15px rgba(200, 39, 26, 0.5)); }
+.char-thinking .character-img { filter: drop-shadow(0 4px 15px rgba(155, 89, 182, 0.3)); opacity: 0.9; }
+
+/* --- Celebration particles --- */
+.character-particles {
+  position: absolute;
+  inset: -20px;
+  pointer-events: none;
+}
+.particle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: particle-burst 1s ease-out forwards;
+  animation-delay: calc(var(--i) * 0.1s);
+  opacity: 0;
+}
+.particle:nth-child(1) { background: var(--accent); top: 50%; left: 50%; }
+.particle:nth-child(2) { background: var(--primary); top: 50%; left: 50%; }
+.particle:nth-child(3) { background: #C8271A; top: 50%; left: 50%; }
+.particle:nth-child(4) { background: #9B59B6; top: 50%; left: 50%; }
+.particle:nth-child(5) { background: #3498db; top: 50%; left: 50%; }
+.particle:nth-child(6) { background: #FF6B35; top: 50%; left: 50%; }
+
+@keyframes particle-burst {
+  0% { opacity: 1; transform: translate(0, 0) scale(0); }
+  50% { opacity: 1; }
+  100% { opacity: 0; transform: translate(
+    calc(cos(calc(var(--i) * 60deg)) * 50px),
+    calc(sin(calc(var(--i) * 60deg)) * 50px)
+  ) scale(1.5); }
+}
+
+/* Fallback particle animation for browsers without trig functions */
+@supports not (transform: translate(calc(cos(0deg) * 1px), 0)) {
+  .particle:nth-child(1) { animation-name: particle-1; }
+  .particle:nth-child(2) { animation-name: particle-2; }
+  .particle:nth-child(3) { animation-name: particle-3; }
+  .particle:nth-child(4) { animation-name: particle-4; }
+  .particle:nth-child(5) { animation-name: particle-5; }
+  .particle:nth-child(6) { animation-name: particle-6; }
+
+  @keyframes particle-1 { 0% { opacity:1; transform: scale(0); } 50% { opacity:1; } 100% { opacity:0; transform: translate(45px, -25px) scale(1.5); } }
+  @keyframes particle-2 { 0% { opacity:1; transform: scale(0); } 50% { opacity:1; } 100% { opacity:0; transform: translate(-30px, -45px) scale(1.5); } }
+  @keyframes particle-3 { 0% { opacity:1; transform: scale(0); } 50% { opacity:1; } 100% { opacity:0; transform: translate(-50px, 10px) scale(1.5); } }
+  @keyframes particle-4 { 0% { opacity:1; transform: scale(0); } 50% { opacity:1; } 100% { opacity:0; transform: translate(-20px, 45px) scale(1.5); } }
+  @keyframes particle-5 { 0% { opacity:1; transform: scale(0); } 50% { opacity:1; } 100% { opacity:0; transform: translate(35px, 40px) scale(1.5); } }
+  @keyframes particle-6 { 0% { opacity:1; transform: scale(0); } 50% { opacity:1; } 100% { opacity:0; transform: translate(50px, -5px) scale(1.5); } }
+}
+
+/* --- Happy sparkles --- */
+.character-sparkles {
+  position: absolute;
+  inset: -15px;
+  pointer-events: none;
+}
+.sparkle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: var(--accent);
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  animation: sparkle-anim 0.8s ease-in-out infinite;
+  animation-delay: calc(var(--i) * 0.2s);
+}
+.sparkle:nth-child(1) { top: 5%; right: 10%; }
+.sparkle:nth-child(2) { top: 15%; left: 5%; }
+.sparkle:nth-child(3) { bottom: 25%; right: 0%; }
+
+@keyframes sparkle-anim {
+  0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1.5) rotate(180deg); }
+}
+
+/* --- Thinking dots --- */
+.character-dots {
+  position: absolute;
+  top: -10px;
+  right: -15px;
+  display: flex;
+  gap: 4px;
+}
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  animation: thinking-dot 1.4s ease-in-out infinite;
+}
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes thinking-dot {
+  0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1.2); }
+}
+
+/* --- Wrong sweat drop --- */
+.character-sweat {
+  position: absolute;
+  top: 10%;
+  right: 5%;
+}
+.sweat-drop {
+  display: block;
+  width: 8px;
+  height: 12px;
+  background: #3498db;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  animation: sweat-fall 1s ease-in infinite;
+  opacity: 0;
+}
+
+@keyframes sweat-fall {
+  0% { opacity: 0; transform: translateY(0); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(20px); }
+}
+
+/* --- Speech bubble --- */
+.character-bubble {
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  padding: 12px 18px;
+  max-width: 240px;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+.bubble-tail {
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 9px solid transparent;
+  border-right: 9px solid transparent;
+  border-bottom: 9px solid var(--border);
+}
+.bubble-tail::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: -7px;
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-bottom: 7px solid var(--card);
+}
+.bubble-name {
+  display: block;
+  font-weight: 900;
+  font-size: 0.8rem;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.bubble-role {
+  display: block;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.bubble-message {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+/* Legacy character classes (keep for compatibility) */
 .character { font-size: 4rem; display: inline-block; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4)); }
 .character-sm { font-size: 2.5rem; display: inline-block; }
 .character-lg { font-size: 6rem; display: inline-block; filter: drop-shadow(0 8px 16px rgba(0,0,0,0.5)); }
@@ -257,4 +495,6 @@ body {
 @media (max-width: 768px) {
   .container { padding: 0 16px; }
   .btn-lg { padding: 14px 24px; font-size: 1rem; }
+  .character-bubble { max-width: 180px; padding: 10px 14px; }
+  .character-glow { width: 90px; height: 90px; }
 }

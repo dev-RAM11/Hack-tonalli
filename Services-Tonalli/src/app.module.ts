@@ -15,6 +15,7 @@ import { CertificatesModule } from './certificates/certificates.module';
 import { Chapter } from './chapters/entities/chapter.entity';
 import { ChapterModule as ChapterModuleEntity } from './chapters/entities/chapter-module.entity';
 import { ChapterProgress } from './chapters/entities/chapter-progress.entity';
+import { ChapterQuestion } from './chapters/entities/chapter-question.entity';
 import { WeeklyScore } from './podium/entities/weekly-score.entity';
 import { PodiumReward } from './podium/entities/podium-reward.entity';
 import { ActaCertificate } from './certificates/entities/acta-certificate.entity';
@@ -40,7 +41,7 @@ import { Streak } from './users/entities/streak.entity';
         username: process.env.DB_USER || 'root',
         password: process.env.DB_PASS || '',
         database: process.env.DB_NAME || 'tonalli',
-        entities: [User, Lesson, Quiz, Progress, NFTCertificate, Streak, Chapter, ChapterModuleEntity, ChapterProgress, WeeklyScore, PodiumReward, ActaCertificate],
+        entities: [User, Lesson, Quiz, Progress, NFTCertificate, Streak, Chapter, ChapterModuleEntity, ChapterProgress, ChapterQuestion, WeeklyScore, PodiumReward, ActaCertificate],
         synchronize: true,   // crea/actualiza tablas automáticamente
         logging: false,
         charset: 'utf8mb4',

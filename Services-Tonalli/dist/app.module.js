@@ -24,6 +24,7 @@ const certificates_module_1 = require("./certificates/certificates.module");
 const chapter_entity_1 = require("./chapters/entities/chapter.entity");
 const chapter_module_entity_1 = require("./chapters/entities/chapter-module.entity");
 const chapter_progress_entity_1 = require("./chapters/entities/chapter-progress.entity");
+const chapter_question_entity_1 = require("./chapters/entities/chapter-question.entity");
 const weekly_score_entity_1 = require("./podium/entities/weekly-score.entity");
 const podium_reward_entity_1 = require("./podium/entities/podium-reward.entity");
 const acta_certificate_entity_1 = require("./certificates/entities/acta-certificate.entity");
@@ -52,7 +53,7 @@ exports.AppModule = AppModule = __decorate([
                     username: process.env.DB_USER || 'root',
                     password: process.env.DB_PASS || '',
                     database: process.env.DB_NAME || 'tonalli',
-                    entities: [user_entity_1.User, lesson_entity_1.Lesson, quiz_entity_1.Quiz, progress_entity_1.Progress, nft_certificate_entity_1.NFTCertificate, streak_entity_1.Streak, chapter_entity_1.Chapter, chapter_module_entity_1.ChapterModule, chapter_progress_entity_1.ChapterProgress, weekly_score_entity_1.WeeklyScore, podium_reward_entity_1.PodiumReward, acta_certificate_entity_1.ActaCertificate],
+                    entities: [user_entity_1.User, lesson_entity_1.Lesson, quiz_entity_1.Quiz, progress_entity_1.Progress, nft_certificate_entity_1.NFTCertificate, streak_entity_1.Streak, chapter_entity_1.Chapter, chapter_module_entity_1.ChapterModule, chapter_progress_entity_1.ChapterProgress, chapter_question_entity_1.ChapterQuestion, weekly_score_entity_1.WeeklyScore, podium_reward_entity_1.PodiumReward, acta_certificate_entity_1.ActaCertificate],
                     synchronize: true,
                     logging: false,
                     charset: 'utf8mb4',

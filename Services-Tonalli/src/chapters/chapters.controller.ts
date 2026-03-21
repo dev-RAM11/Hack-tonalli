@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Patch, Delete,
+  Controller, Get, Post, Patch, Put, Delete,
   Param, Body, UseGuards, Req,
 } from '@nestjs/common';
 import { ChaptersService } from './chapters.service';
@@ -92,6 +92,22 @@ export class ChaptersController {
   @Patch('modules/:moduleId')
   updateModule(@Param('moduleId') moduleId: string, @Body() data: any) {
     return this.chaptersService.updateModule(moduleId, data);
+  }
+
+  /** GET /api/chapters/modules/:id/questions — admin get module questions */
+  @Get('modules/:id/questions')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  getModuleQuestions(@Param('id') id: string) {
+    return this.chaptersService.getModuleQuestions(id);
+  }
+
+  /** PUT /api/chapters/modules/:id/questions — admin replace module questions */
+  @Put('modules/:id/questions')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  replaceModuleQuestions(@Param('id') id: string, @Body() body: { questions: any[] }) {
+    return this.chaptersService.replaceModuleQuestions(id, body.questions);
   }
 
   // ── Param :id routes (AFTER static routes) ───────────────────────────────

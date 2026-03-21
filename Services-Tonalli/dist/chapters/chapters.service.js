@@ -19,18 +19,21 @@ const typeorm_2 = require("typeorm");
 const chapter_entity_1 = require("./entities/chapter.entity");
 const chapter_module_entity_1 = require("./entities/chapter-module.entity");
 const chapter_progress_entity_1 = require("./entities/chapter-progress.entity");
+const chapter_question_entity_1 = require("./entities/chapter-question.entity");
 const user_entity_1 = require("../users/entities/user.entity");
 const soroban_service_1 = require("../stellar/soroban.service");
 let ChaptersService = class ChaptersService {
     chaptersRepo;
     modulesRepo;
     progressRepo;
+    questionsRepo;
     usersRepo;
     sorobanService;
-    constructor(chaptersRepo, modulesRepo, progressRepo, usersRepo, sorobanService) {
+    constructor(chaptersRepo, modulesRepo, progressRepo, questionsRepo, usersRepo, sorobanService) {
         this.chaptersRepo = chaptersRepo;
         this.modulesRepo = modulesRepo;
         this.progressRepo = progressRepo;
+        this.questionsRepo = questionsRepo;
         this.usersRepo = usersRepo;
         this.sorobanService = sorobanService;
     }
@@ -41,7 +44,7 @@ let ChaptersService = class ChaptersService {
             { type: 'lesson', order: 1, title: 'Módulo 1', questionsPerAttempt: 5, xpReward: 30 },
             { type: 'lesson', order: 2, title: 'Módulo 2', questionsPerAttempt: 5, xpReward: 30 },
             { type: 'lesson', order: 3, title: 'Módulo 3', questionsPerAttempt: 5, xpReward: 30 },
-            { type: 'final_exam', order: 4, title: 'Examen Final', questionsPerAttempt: 10, xpReward: 50 },
+            { type: 'final_exam', order: 4, title: 'Examen Final', questionsPerAttempt: 20, xpReward: 50 },
         ];
         for (const m of modules) {
             await this.modulesRepo.save(this.modulesRepo.create({
@@ -122,7 +125,9 @@ let ChaptersService = class ChaptersService {
         });
     }
     async findOne(id) {
-        const ch = await this.chaptersRepo.findOne({ where: { id }, relations: ['modules'] });
+        let ch = await this.chaptersRepo.findOne({ where: { id }, relations: ['modules'] });
+        if (!ch)
+            ch = await this.chaptersRepo.findOne({ where: { moduleTag: id }, relations: ['modules'] });
         if (!ch)
             throw new common_1.NotFoundException(`Chapter ${id} not found`);
         if (ch.modules)
@@ -157,6 +162,26 @@ let ChaptersService = class ChaptersService {
         Object.assign(mod, data);
         return this.modulesRepo.save(mod);
     }
+    async getModuleQuestions(moduleId) {
+        return this.questionsRepo.find({ where: { moduleId }, order: { order: 'ASC' } });
+    }
+    async replaceModuleQuestions(moduleId, questions) {
+        const mod = await this.modulesRepo.findOne({ where: { id: moduleId } });
+        if (!mod)
+            throw new common_1.NotFoundException('Module not found');
+        await this.questionsRepo.delete({ moduleId });
+        for (const [idx, q] of questions.entries()) {
+            await this.questionsRepo.save(this.questionsRepo.create({
+                moduleId,
+                question: q.question,
+                options: q.options,
+                correctIndex: q.correctIndex,
+                explanation: q.explanation || '',
+                order: idx,
+            }));
+        }
+        return { success: true, count: questions.length };
+    }
     async getChapterWithProgress(chapterId, userId) {
         const chapter = await this.findOne(chapterId);
         const user = await this.usersRepo.findOne({ where: { id: userId } });
@@ -176,7 +201,7 @@ let ChaptersService = class ChaptersService {
                     lockedReason = 'Este capitulo aun no esta disponible para tu plan. Se libera la semana ' + chapter.releaseWeek + '.';
             }
         }
-        const allProgress = await this.progressRepo.find({ where: { chapterId, userId } });
+        const allProgress = await this.progressRepo.find({ where: { chapterId: chapter.id, userId } });
         const progressMap = new Map(allProgress.map((p) => [p.moduleId, p]));
         let prevModuleCompleted = true;
         const modulesData = chapter.modules.map((mod) => {
@@ -196,21 +221,11 @@ let ChaptersService = class ChaptersService {
                 unlocked = mod3Done && (user?.isPremium || !!progress);
             }
             let livesRemaining = -1;
-            let lockedUntil = null;
+            const lockedUntil = null;
             if (!user?.isPremium && !progress?.completed) {
-                const attempts = progress?.attempts || 0;
-                if (attempts >= 3 && progress?.lockedUntil) {
-                    const lock = new Date(progress.lockedUntil);
-                    if (lock > new Date()) {
-                        lockedUntil = lock.toISOString();
-                        livesRemaining = 0;
-                    }
-                    else {
-                        livesRemaining = 3;
-                    }
-                }
-                else {
-                    livesRemaining = Math.max(0, 3 - attempts);
+                if (mod.type === 'lesson') {
+                    const attempts = progress?.quizAttempts || 0;
+                    livesRemaining = Math.max(0, 2 - attempts);
                 }
             }
             const moduleCompleted = !!progress?.completed;
@@ -283,27 +298,15 @@ let ChaptersService = class ChaptersService {
                 throw new common_1.ForbiddenException('Completa el video primero');
             }
         }
-        if (!user?.isPremium) {
+        if (!user?.isPremium && mod.type === 'lesson') {
             const progress = await this.progressRepo.findOne({ where: { moduleId, userId } });
             if (progress && !progress.completed) {
-                const attempts = mod.type === 'final_exam' ? progress.attempts : progress.quizAttempts;
-                if (attempts >= 3 && progress.lockedUntil) {
-                    const lock = new Date(progress.lockedUntil);
-                    if (lock > new Date()) {
-                        throw new common_1.ForbiddenException({
-                            message: 'Quiz bloqueado. Espera para intentar de nuevo.',
-                            lockedUntil: lock.toISOString(),
-                            livesRemaining: 0,
-                        });
-                    }
-                    if (mod.type === 'final_exam') {
-                        progress.attempts = 0;
-                    }
-                    else {
-                        progress.quizAttempts = 0;
-                    }
-                    progress.lockedUntil = undefined;
-                    await this.progressRepo.save(progress);
+                if (progress.quizAttempts >= 2) {
+                    throw new common_1.ForbiddenException({
+                        message: 'Debes reiniciar el módulo para intentar de nuevo.',
+                        mustRedoModule: true,
+                        livesRemaining: 0,
+                    });
                 }
             }
         }
@@ -311,38 +314,26 @@ let ChaptersService = class ChaptersService {
         if (mod.type === 'final_exam') {
             const chapter = await this.findOne(mod.chapterId);
             for (const m of chapter.modules) {
-                if (m.type === 'lesson' && m.questionsPool) {
-                    pool.push(...JSON.parse(m.questionsPool));
+                if (m.type === 'lesson') {
+                    const mqs = await this.questionsRepo.find({ where: { moduleId: m.id } });
+                    pool.push(...mqs);
                 }
             }
-            if (mod.questionsPool) {
-                pool.push(...JSON.parse(mod.questionsPool));
-            }
+            const extraQs = await this.questionsRepo.find({ where: { moduleId: mod.id } });
+            pool.push(...extraQs);
         }
         else {
-            pool = mod.questionsPool ? JSON.parse(mod.questionsPool) : [];
+            pool = await this.questionsRepo.find({ where: { moduleId: mod.id } });
         }
         const shuffled = [...pool].sort(() => Math.random() - 0.5);
         const selected = shuffled.slice(0, mod.questionsPerAttempt || 5);
-        const questions = selected.map((q) => {
-            const indices = q.options.map((_, i) => i);
-            for (let i = indices.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [indices[i], indices[j]] = [indices[j], indices[i]];
-            }
-            return {
-                ...q,
-                options: indices.map((i) => q.options[i]),
-                correctIndex: indices.indexOf(q.correctIndex),
-            };
-        });
         return {
             moduleId: mod.id,
             chapterId: mod.chapterId,
             type: mod.type,
             passingScore: mod.passingScore,
-            totalQuestions: questions.length,
-            questions: questions.map((q) => ({
+            totalQuestions: selected.length,
+            questions: selected.map((q) => ({
                 id: q.id,
                 question: q.question,
                 options: q.options,
@@ -356,20 +347,22 @@ let ChaptersService = class ChaptersService {
         const user = await this.usersRepo.findOne({ where: { id: userId } });
         if (!user)
             throw new common_1.NotFoundException('User not found');
-        let pool = [];
+        let dbQuestions = [];
         if (mod.type === 'final_exam') {
             const chapter = await this.findOne(mod.chapterId);
             for (const m of chapter.modules) {
-                if (m.type === 'lesson' && m.questionsPool)
-                    pool.push(...JSON.parse(m.questionsPool));
+                if (m.type === 'lesson') {
+                    const mqs = await this.questionsRepo.find({ where: { moduleId: m.id } });
+                    dbQuestions.push(...mqs);
+                }
             }
-            if (mod.questionsPool)
-                pool.push(...JSON.parse(mod.questionsPool));
+            const extraQs = await this.questionsRepo.find({ where: { moduleId: mod.id } });
+            dbQuestions.push(...extraQs);
         }
         else {
-            pool = mod.questionsPool ? JSON.parse(mod.questionsPool) : [];
+            dbQuestions = await this.questionsRepo.find({ where: { moduleId: mod.id } });
         }
-        const qMap = new Map(pool.map((q) => [q.id, q]));
+        const qMap = new Map(dbQuestions.map((q) => [q.id, q]));
         let correct = 0;
         const results = answers.map((a) => {
             const q = qMap.get(a.questionId);
@@ -433,30 +426,45 @@ let ChaptersService = class ChaptersService {
             }
         }
         let livesRemaining = -1;
-        let lockedUntil = null;
+        let mustRedoModule = false;
         if (!user.isPremium && !passed) {
             const failedAttempts = isFinalExam ? progress.attempts : progress.quizAttempts;
-            if (failedAttempts >= 3) {
-                const lock = new Date(Date.now() + 24 * 60 * 60 * 1000);
-                progress.lockedUntil = lock;
-                lockedUntil = lock.toISOString();
+            if (failedAttempts >= 2 && !isFinalExam) {
+                progress.infoCompleted = false;
+                progress.videoCompleted = false;
+                progress.videoProgress = 0;
+                progress.quizCompleted = false;
+                progress.quizAttempts = 0;
+                progress.quizScore = 0;
+                progress.completed = false;
                 livesRemaining = 0;
+                mustRedoModule = true;
             }
             else {
-                livesRemaining = 3 - failedAttempts;
+                livesRemaining = Math.max(0, 2 - failedAttempts);
             }
         }
         await this.progressRepo.save(progress);
+        let message;
+        if (passed) {
+            message = '¡Felicidades! Has aprobado.';
+        }
+        else if (mustRedoModule) {
+            message = 'Agotaste tus 2 intentos. El módulo ha sido reiniciado, deberás completar la lectura y el video de nuevo.';
+        }
+        else if (livesRemaining === 1) {
+            message = `Necesitas ${mod.passingScore}% para pasar. Obtuviste ${score}%. Te queda 1 intento.`;
+        }
+        else {
+            message = `Necesitas ${mod.passingScore}% para pasar. Obtuviste ${score}%.${livesRemaining >= 0 ? ` Te quedan ${livesRemaining} intentos.` : ''}`;
+        }
         return {
             score, passed, correctCount: correct, totalQuestions: answers.length, results,
             xpEarned: passed ? mod.xpReward : 0,
-            livesRemaining, lockedUntil,
+            livesRemaining,
             moduleCompleted: progress.completed,
-            message: passed
-                ? '¡Felicidades! Has aprobado.'
-                : livesRemaining === 0
-                    ? '¡Sin vidas! Espera 24 horas para intentar de nuevo.'
-                    : `Necesitas ${mod.passingScore}% para pasar. Obtuviste ${score}%.${livesRemaining >= 0 ? ` Te quedan ${livesRemaining} vidas.` : ''}`,
+            mustRedoModule: mustRedoModule || false,
+            message,
         };
     }
     async reportQuizAbandon(moduleId, userId, reason) {
@@ -474,25 +482,39 @@ let ChaptersService = class ChaptersService {
             progress.quizAttempts += 1;
         }
         let livesRemaining = -1;
-        let lockedUntil = null;
+        let mustRedoModule = false;
         if (!user?.isPremium) {
             const attempts = mod.type === 'final_exam' ? progress.attempts : progress.quizAttempts;
-            if (attempts >= 3) {
-                const lock = new Date(Date.now() + 24 * 60 * 60 * 1000);
-                progress.lockedUntil = lock;
-                lockedUntil = lock.toISOString();
+            if (attempts >= 2 && mod.type !== 'final_exam') {
+                progress.infoCompleted = false;
+                progress.videoCompleted = false;
+                progress.videoProgress = 0;
+                progress.quizCompleted = false;
+                progress.quizAttempts = 0;
+                progress.quizScore = 0;
+                progress.completed = false;
                 livesRemaining = 0;
+                mustRedoModule = true;
             }
             else {
-                livesRemaining = 3 - attempts;
+                livesRemaining = Math.max(0, 2 - attempts);
             }
         }
         await this.progressRepo.save(progress);
+        let message;
+        if (mustRedoModule) {
+            message = 'Agotaste tus 2 intentos al abandonar. El módulo ha sido reiniciado, deberás completar la lectura y el video de nuevo.';
+        }
+        else if (livesRemaining === 1) {
+            message = `Perdiste un intento por abandonar el quiz. Te queda 1 intento.`;
+        }
+        else {
+            message = `Perdiste un intento por abandonar el quiz.${livesRemaining >= 0 ? ` Te quedan ${livesRemaining} intentos.` : ''}`;
+        }
         return {
-            penalized: true, reason, livesRemaining, lockedUntil,
-            message: livesRemaining === 0
-                ? 'Perdiste todas tus vidas por abandonar el quiz. Espera 24 horas.'
-                : `Perdiste una vida por abandonar el quiz.${livesRemaining >= 0 ? ` Te quedan ${livesRemaining} vidas.` : ''}`,
+            penalized: true, reason, livesRemaining,
+            mustRedoModule: mustRedoModule || false,
+            message,
         };
     }
     async unlockFinalExam(chapterId, userId) {
@@ -513,6 +535,7 @@ let ChaptersService = class ChaptersService {
         const mod = await this.modulesRepo.findOne({ where: { id: moduleId } });
         if (!mod)
             throw new common_1.NotFoundException('Module not found');
+        const questionCount = await this.questionsRepo.count({ where: { moduleId: mod.id } });
         return {
             id: mod.id,
             type: mod.type,
@@ -520,7 +543,7 @@ let ChaptersService = class ChaptersService {
             title: mod.title,
             content: mod.content,
             videoUrl: mod.videoUrl,
-            hasQuiz: !!mod.questionsPool,
+            hasQuiz: questionCount > 0 || mod.type === 'final_exam',
         };
     }
     async getOrCreateProgress(chapterId, moduleId, userId) {
@@ -543,8 +566,10 @@ exports.ChaptersService = ChaptersService = __decorate([
     __param(0, (0, typeorm_1.InjectRepository)(chapter_entity_1.Chapter)),
     __param(1, (0, typeorm_1.InjectRepository)(chapter_module_entity_1.ChapterModule)),
     __param(2, (0, typeorm_1.InjectRepository)(chapter_progress_entity_1.ChapterProgress)),
-    __param(3, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
+    __param(3, (0, typeorm_1.InjectRepository)(chapter_question_entity_1.ChapterQuestion)),
+    __param(4, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,

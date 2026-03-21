@@ -50,24 +50,31 @@ export declare class ChaptersController {
         })[];
         xpEarned: number;
         livesRemaining: number;
-        lockedUntil: string | null;
         moduleCompleted: boolean;
+        mustRedoModule: boolean;
         message: string;
     }>;
     reportQuizAbandon(moduleId: string, reason: string, req: any): Promise<{
         penalized: boolean;
         reason: string;
         livesRemaining?: undefined;
-        lockedUntil?: undefined;
+        mustRedoModule?: undefined;
         message?: undefined;
     } | {
         penalized: boolean;
         reason: string;
         livesRemaining: number;
-        lockedUntil: string | null;
+        mustRedoModule: boolean;
         message: string;
     }>;
     updateModule(moduleId: string, data: any): Promise<import("./entities/chapter-module.entity").ChapterModule>;
+    getModuleQuestions(id: string): Promise<import("./entities/chapter-question.entity").ChapterQuestion[]>;
+    replaceModuleQuestions(id: string, body: {
+        questions: any[];
+    }): Promise<{
+        success: boolean;
+        count: number;
+    }>;
     findOne(id: string): Promise<import("./entities/chapter.entity").Chapter>;
     getChapterWithProgress(id: string, req: any): Promise<{
         id: string;
@@ -104,7 +111,7 @@ export declare class ChaptersController {
             score: number;
             attempts: number;
             livesRemaining: number;
-            lockedUntil: string | null;
+            lockedUntil: null;
         }[];
         completionPercent: number;
         isPremium: boolean;

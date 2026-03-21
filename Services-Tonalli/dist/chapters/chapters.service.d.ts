@@ -2,6 +2,7 @@ import { Repository } from 'typeorm';
 import { Chapter } from './entities/chapter.entity';
 import { ChapterModule } from './entities/chapter-module.entity';
 import { ChapterProgress } from './entities/chapter-progress.entity';
+import { ChapterQuestion } from './entities/chapter-question.entity';
 import { CreateChapterDto } from './dto/create-chapter.dto';
 import { UpdateChapterDto } from './dto/update-chapter.dto';
 import { User } from '../users/entities/user.entity';
@@ -10,9 +11,10 @@ export declare class ChaptersService {
     private readonly chaptersRepo;
     private readonly modulesRepo;
     private readonly progressRepo;
+    private readonly questionsRepo;
     private readonly usersRepo;
     private readonly sorobanService;
-    constructor(chaptersRepo: Repository<Chapter>, modulesRepo: Repository<ChapterModule>, progressRepo: Repository<ChapterProgress>, usersRepo: Repository<User>, sorobanService: SorobanService);
+    constructor(chaptersRepo: Repository<Chapter>, modulesRepo: Repository<ChapterModule>, progressRepo: Repository<ChapterProgress>, questionsRepo: Repository<ChapterQuestion>, usersRepo: Repository<User>, sorobanService: SorobanService);
     create(dto: CreateChapterDto): Promise<Chapter>;
     getCurrentWeek(): string;
     getNextWeek(): string;
@@ -26,6 +28,16 @@ export declare class ChaptersService {
     setReleaseWeek(id: string, week: string): Promise<Chapter>;
     releaseThisWeek(id: string): Promise<Chapter>;
     updateModule(moduleId: string, data: Partial<ChapterModule>): Promise<ChapterModule>;
+    getModuleQuestions(moduleId: string): Promise<ChapterQuestion[]>;
+    replaceModuleQuestions(moduleId: string, questions: {
+        question: string;
+        options: string[];
+        correctIndex: number;
+        explanation: string;
+    }[]): Promise<{
+        success: boolean;
+        count: number;
+    }>;
     getChapterWithProgress(chapterId: string, userId: string): Promise<{
         id: string;
         title: string;
@@ -61,7 +73,7 @@ export declare class ChaptersService {
             score: number;
             attempts: number;
             livesRemaining: number;
-            lockedUntil: string | null;
+            lockedUntil: null;
         }[];
         completionPercent: number;
         isPremium: boolean;
@@ -103,21 +115,21 @@ export declare class ChaptersService {
         })[];
         xpEarned: number;
         livesRemaining: number;
-        lockedUntil: string | null;
         moduleCompleted: boolean;
+        mustRedoModule: boolean;
         message: string;
     }>;
     reportQuizAbandon(moduleId: string, userId: string, reason: string): Promise<{
         penalized: boolean;
         reason: string;
         livesRemaining?: undefined;
-        lockedUntil?: undefined;
+        mustRedoModule?: undefined;
         message?: undefined;
     } | {
         penalized: boolean;
         reason: string;
         livesRemaining: number;
-        lockedUntil: string | null;
+        mustRedoModule: boolean;
         message: string;
     }>;
     unlockFinalExam(chapterId: string, userId: string): Promise<{

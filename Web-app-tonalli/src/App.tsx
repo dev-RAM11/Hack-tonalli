@@ -1,6 +1,18 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ActaConfig, testNet } from '@acta-team/acta-sdk';
+// ACTA SDK - only wrap if API key is present to avoid crashes
+let ActaWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => <>{children}</>;
+try {
+  const { ActaConfig, testNet } = require('@acta-team/acta-sdk');
+  const apiKey = import.meta.env.VITE_ACTA_API_KEY;
+  if (apiKey) {
+    ActaWrapper = ({ children }: { children: React.ReactNode }) => (
+      <ActaConfig baseURL={testNet} apiKey={apiKey}>{children}</ActaConfig>
+    );
+  }
+} catch (e) {
+  console.warn('ACTA SDK not available:', e);
+}
 import { Navbar } from './components/Navbar';
 import { Landing } from './pages/Landing';
 import { Login } from './pages/Login';
@@ -48,11 +60,9 @@ function AppLayout({ children, showNavbar = true }: { children: React.ReactNode;
   );
 }
 
-const ACTA_API_KEY = import.meta.env.VITE_ACTA_API_KEY || '';
-
 export default function App() {
   return (
-    <ActaConfig baseURL={testNet} apiKey={ACTA_API_KEY}>
+    <ActaWrapper>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Routes>
@@ -109,6 +119,6 @@ export default function App() {
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>
-    </ActaConfig>
+    </ActaWrapper>
   );
 }

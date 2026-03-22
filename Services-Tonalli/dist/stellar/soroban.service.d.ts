@@ -52,6 +52,7 @@ export declare class SorobanService {
     private simulateSorobanCall;
     private waitForTransaction;
     private getTransactionResult;
+    getTokenBalance(userPublicKey: string): Promise<number>;
     private mockMintCertificate;
     private mockRewardUser;
 }

@@ -207,6 +207,26 @@ let SorobanService = SorobanService_1 = class SorobanService {
         const successResult = result;
         return successResult.returnValue;
     }
+    async getTokenBalance(userPublicKey) {
+        const tokenContractId = this.configService.get('TOKEN_CONTRACT_ID');
+        if (!tokenContractId) {
+            this.logger.warn('TOKEN_CONTRACT_ID not set — returning mock balance');
+            return 0;
+        }
+        try {
+            const contract = new stellar_sdk_1.Contract(tokenContractId);
+            const operation = contract.call('balance', new stellar_sdk_1.Address(userPublicKey).toScVal());
+            const result = await this.simulateSorobanCall(operation);
+            if (!result)
+                return 0;
+            const raw = (0, stellar_sdk_1.scValToNative)(result);
+            return Number(raw) / 10_000_000;
+        }
+        catch (error) {
+            this.logger.error('Failed to get token balance', error);
+            return 0;
+        }
+    }
     async mockMintCertificate(params) {
         const tokenId = Math.floor(Math.random() * 9000) + 1000;
         const txHash = Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');

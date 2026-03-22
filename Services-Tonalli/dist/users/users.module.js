@@ -13,12 +13,13 @@ const users_service_1 = require("./users.service");
 const users_controller_1 = require("./users.controller");
 const user_entity_1 = require("./entities/user.entity");
 const streak_entity_1 = require("./entities/streak.entity");
+const stellar_module_1 = require("../stellar/stellar.module");
 let UsersModule = class UsersModule {
 };
 exports.UsersModule = UsersModule;
 exports.UsersModule = UsersModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([user_entity_1.User, streak_entity_1.Streak])],
+        imports: [typeorm_1.TypeOrmModule.forFeature([user_entity_1.User, streak_entity_1.Streak]), stellar_module_1.StellarModule],
         controllers: [users_controller_1.UsersController],
         providers: [users_service_1.UsersService],
         exports: [users_service_1.UsersService],

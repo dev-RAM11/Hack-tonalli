@@ -6,7 +6,6 @@ import {
   CreateDateColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
-import { Chapter } from '../../chapters/entities/chapter.entity';
 
 @Entity('acta_certificates')
 export class ActaCertificate {
@@ -18,9 +17,6 @@ export class ActaCertificate {
 
   @Column()
   userId: string;
-
-  @ManyToOne(() => Chapter)
-  chapter: Chapter;
 
   @Column()
   chapterId: string;

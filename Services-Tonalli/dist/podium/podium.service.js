@@ -44,7 +44,7 @@ let PodiumService = PodiumService_1 = class PodiumService {
     }
     async updateScore(userId) {
         const user = await this.usersRepo.findOne({ where: { id: userId } });
-        if (!user?.isPremium)
+        if (user?.plan === 'free')
             return;
         const week = this.getCurrentWeek();
         let score = await this.scoresRepo.findOne({ where: { userId, week } });
@@ -75,8 +75,8 @@ let PodiumService = PodiumService_1 = class PodiumService {
     }
     async getWeeklyLeaderboard(userId) {
         const user = await this.usersRepo.findOne({ where: { id: userId } });
-        if (!user?.isPremium) {
-            throw new common_1.ForbiddenException('El podio es exclusivo para usuarios Premium');
+        if (user?.plan === 'free') {
+            throw new common_1.ForbiddenException('El podio es exclusivo para usuarios Pro y Max');
         }
         const week = this.getCurrentWeek();
         const scores = await this.scoresRepo.find({
@@ -117,7 +117,7 @@ let PodiumService = PodiumService_1 = class PodiumService {
             xp: u.totalXp,
             streak: u.currentStreak,
             character: u.character || 'chima',
-            isPremium: u.isPremium,
+            plan: u.plan || 'free',
         }));
     }
     async getCityLeaderboard(city) {
@@ -171,7 +171,7 @@ let PodiumService = PodiumService_1 = class PodiumService {
             const score = scores[i];
             const user = score.user;
             const rewardUsd = rewardAmounts[i];
-            if (!user?.isPremium)
+            if (user?.plan === 'free')
                 continue;
             const reward = this.rewardsRepo.create({
                 userId: score.userId,

@@ -350,6 +350,36 @@ export class SorobanService {
     return successResult.returnValue!;
   }
 
+  // ── Token Balance ─────────────────────────────────────────────────────────
+
+  /**
+   * Obtiene el balance de tokens TNL de un usuario en el contrato Soroban
+   */
+  async getTokenBalance(userPublicKey: string): Promise<number> {
+    const tokenContractId = this.configService.get('TOKEN_CONTRACT_ID');
+    if (!tokenContractId) {
+      this.logger.warn('TOKEN_CONTRACT_ID not set — returning mock balance');
+      return 0;
+    }
+
+    try {
+      const contract = new Contract(tokenContractId);
+      const operation = contract.call(
+        'balance',
+        new Address(userPublicKey).toScVal(),
+      );
+
+      const result = await this.simulateSorobanCall(operation);
+      if (!result) return 0;
+
+      const raw = scValToNative(result) as bigint;
+      return Number(raw) / 10_000_000;
+    } catch (error) {
+      this.logger.error('Failed to get token balance', error);
+      return 0;
+    }
+  }
+
   // ── Mock Responses (para demo sin contratos desplegados) ──────────────────
 
   private async mockMintCertificate(params: MintCertificateParams) {

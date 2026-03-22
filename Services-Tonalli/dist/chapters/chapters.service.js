@@ -82,26 +82,20 @@ let ChaptersService = class ChaptersService {
     }
     async findPublishedForUser(userId) {
         const user = await this.usersRepo.findOne({ where: { id: userId } });
+        const userPlan = user?.plan || 'free';
         const allPublished = await this.chaptersRepo.find({
             where: { published: true },
             relations: ['modules'],
             order: { order: 'ASC' },
         });
         const currentWeek = this.getCurrentWeek();
-        const nextWeek = this.getNextWeek();
-        return allPublished.map((ch) => {
+        return allPublished.map((ch, index) => {
             let accessible = true;
             let reason = '';
-            if (ch.releaseWeek) {
-                if (user?.isPremium) {
-                    accessible = ch.releaseWeek <= nextWeek;
-                    if (!accessible)
-                        reason = 'premium_future';
-                }
-                else {
-                    accessible = ch.releaseWeek <= currentWeek;
-                    if (!accessible)
-                        reason = 'free_locked';
+            if (userPlan === 'free') {
+                if (index >= 3) {
+                    accessible = false;
+                    reason = 'free_limit';
                 }
             }
             return {
@@ -185,20 +179,18 @@ let ChaptersService = class ChaptersService {
     async getChapterWithProgress(chapterId, userId) {
         const chapter = await this.findOne(chapterId);
         const user = await this.usersRepo.findOne({ where: { id: userId } });
+        const userPlan = user?.plan || 'free';
         let chapterAccessible = true;
         let lockedReason = null;
-        if (chapter.releaseWeek) {
-            const currentWeek = this.getCurrentWeek();
-            const nextWeek = this.getNextWeek();
-            if (user?.isPremium) {
-                chapterAccessible = chapter.releaseWeek <= nextWeek;
-                if (!chapterAccessible)
-                    lockedReason = 'Este capitulo se libera en una semana futura.';
-            }
-            else {
-                chapterAccessible = chapter.releaseWeek <= currentWeek;
-                if (!chapterAccessible)
-                    lockedReason = 'Este capitulo aun no esta disponible para tu plan. Se libera la semana ' + chapter.releaseWeek + '.';
+        if (userPlan === 'free') {
+            const allPublished = await this.chaptersRepo.find({
+                where: { published: true },
+                order: { order: 'ASC' },
+            });
+            const chapterIndex = allPublished.findIndex(ch => ch.id === chapter.id);
+            if (chapterIndex >= 3) {
+                chapterAccessible = false;
+                lockedReason = 'Este capitulo requiere plan Pro o Max. Los usuarios Free solo tienen acceso a los primeros 3 capitulos.';
             }
         }
         const allProgress = await this.progressRepo.find({ where: { chapterId: chapter.id, userId } });
@@ -218,11 +210,16 @@ let ChaptersService = class ChaptersService {
                 const mod3 = chapter.modules.find((m) => m.order === 3);
                 const mod3Progress = mod3 ? progressMap.get(mod3.id) : null;
                 const mod3Done = !!mod3Progress?.completed;
-                unlocked = mod3Done && (user?.isPremium || !!progress);
+                if (userPlan === 'free') {
+                    unlocked = false;
+                }
+                else {
+                    unlocked = mod3Done && (userPlan === 'max' || !!progress);
+                }
             }
             let livesRemaining = -1;
             const lockedUntil = null;
-            if (!user?.isPremium && !progress?.completed) {
+            if (userPlan === 'free' && !progress?.completed) {
                 if (mod.type === 'lesson') {
                     const attempts = progress?.quizAttempts || 0;
                     livesRemaining = Math.max(0, 2 - attempts);
@@ -260,7 +257,7 @@ let ChaptersService = class ChaptersService {
             releaseWeek: chapter.releaseWeek,
             modules: chapterAccessible ? modulesData : [],
             completionPercent: chapterAccessible ? Math.round((completedCount / 4) * 100) : 0,
-            isPremium: user?.isPremium || false,
+            plan: userPlan,
             accessible: chapterAccessible,
             lockedReason,
         };
@@ -298,7 +295,7 @@ let ChaptersService = class ChaptersService {
                 throw new common_1.ForbiddenException('Completa el video primero');
             }
         }
-        if (!user?.isPremium && mod.type === 'lesson') {
+        if (user?.plan === 'free' && mod.type === 'lesson') {
             const progress = await this.progressRepo.findOne({ where: { moduleId, userId } });
             if (progress && !progress.completed) {
                 if (progress.quizAttempts >= 2) {
@@ -427,7 +424,7 @@ let ChaptersService = class ChaptersService {
         }
         let livesRemaining = -1;
         let mustRedoModule = false;
-        if (!user.isPremium && !passed) {
+        if (user.plan === 'free' && !passed) {
             const failedAttempts = isFinalExam ? progress.attempts : progress.quizAttempts;
             if (failedAttempts >= 2 && !isFinalExam) {
                 progress.infoCompleted = false;
@@ -483,7 +480,7 @@ let ChaptersService = class ChaptersService {
         }
         let livesRemaining = -1;
         let mustRedoModule = false;
-        if (!user?.isPremium) {
+        if (user?.plan === 'free') {
             const attempts = mod.type === 'final_exam' ? progress.attempts : progress.quizAttempts;
             if (attempts >= 2 && mod.type !== 'final_exam') {
                 progress.infoCompleted = false;
@@ -519,6 +516,11 @@ let ChaptersService = class ChaptersService {
     }
     async unlockFinalExam(chapterId, userId) {
         const chapter = await this.findOne(chapterId);
+        const user = await this.usersRepo.findOne({ where: { id: userId } });
+        const userPlan = user?.plan || 'free';
+        if (userPlan === 'free') {
+            throw new common_1.ForbiddenException('Los usuarios Free no pueden acceder a certificaciones. Mejora tu plan a Pro o Max.');
+        }
         const mod4 = chapter.modules.find((m) => m.order === 4);
         if (!mod4)
             throw new common_1.NotFoundException('Final exam not found');
@@ -529,7 +531,8 @@ let ChaptersService = class ChaptersService {
                 throw new common_1.ForbiddenException('Completa el Módulo 3 primero');
         }
         await this.getOrCreateProgress(chapterId, mod4.id, userId);
-        return { unlocked: true, moduleId: mod4.id };
+        const certCost = userPlan === 'pro' ? 2 : 0;
+        return { unlocked: true, moduleId: mod4.id, certCost };
     }
     async getModuleContent(moduleId) {
         const mod = await this.modulesRepo.findOne({ where: { id: moduleId } });

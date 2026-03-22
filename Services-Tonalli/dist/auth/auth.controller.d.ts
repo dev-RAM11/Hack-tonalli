@@ -13,9 +13,11 @@ export declare class AuthController {
             displayName: string;
             xp: number;
             walletAddress: string;
+            externalWalletAddress: string | null;
+            walletType: "custodial" | "external" | "hybrid";
             character: string;
-            role: "user" | "admin";
-            isPremium: boolean;
+            role: "user" | "admin" | "designer";
+            plan: "free" | "pro" | "max";
             isFirstLogin: boolean;
             companion: string;
             avatarType: string;
@@ -32,9 +34,11 @@ export declare class AuthController {
             totalXp: number;
             currentStreak: number;
             walletAddress: string;
+            externalWalletAddress: string | null;
+            walletType: "custodial" | "external" | "hybrid";
             character: string;
-            role: "user" | "admin";
-            isPremium: boolean;
+            role: "user" | "admin" | "designer";
+            plan: "free" | "pro" | "max";
             isFirstLogin: boolean;
             companion: string;
             avatarType: string;

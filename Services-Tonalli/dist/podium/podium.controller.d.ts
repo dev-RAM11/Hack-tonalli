@@ -32,7 +32,7 @@ export declare class PodiumController {
         xp: number;
         streak: number;
         character: string;
-        isPremium: boolean;
+        plan: "free" | "pro" | "max";
     }[]>;
     getCityLeaderboard(city: string): Promise<{
         rank: number;

@@ -21,6 +21,7 @@ const progress_module_1 = require("./progress/progress.module");
 const chapters_module_1 = require("./chapters/chapters.module");
 const podium_module_1 = require("./podium/podium.module");
 const certificates_module_1 = require("./certificates/certificates.module");
+const acta_module_1 = require("./acta/acta.module");
 const chapter_entity_1 = require("./chapters/entities/chapter.entity");
 const chapter_module_entity_1 = require("./chapters/entities/chapter-module.entity");
 const chapter_progress_entity_1 = require("./chapters/entities/chapter-progress.entity");
@@ -67,6 +68,7 @@ exports.AppModule = AppModule = __decorate([
             chapters_module_1.ChaptersModule,
             podium_module_1.PodiumModule,
             certificates_module_1.CertificatesModule,
+            acta_module_1.ActaModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

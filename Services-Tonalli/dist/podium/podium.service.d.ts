@@ -44,7 +44,7 @@ export declare class PodiumService {
         xp: number;
         streak: number;
         character: string;
-        isPremium: boolean;
+        plan: "free" | "pro" | "max";
     }[]>;
     getCityLeaderboard(city: string): Promise<{
         rank: number;

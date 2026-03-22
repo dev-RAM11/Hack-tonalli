@@ -13,12 +13,13 @@ const certificates_service_1 = require("./certificates.service");
 const certificates_controller_1 = require("./certificates.controller");
 const acta_certificate_entity_1 = require("./entities/acta-certificate.entity");
 const user_entity_1 = require("../users/entities/user.entity");
+const acta_module_1 = require("../acta/acta.module");
 let CertificatesModule = class CertificatesModule {
 };
 exports.CertificatesModule = CertificatesModule;
 exports.CertificatesModule = CertificatesModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([acta_certificate_entity_1.ActaCertificate, user_entity_1.User])],
+        imports: [typeorm_1.TypeOrmModule.forFeature([acta_certificate_entity_1.ActaCertificate, user_entity_1.User]), acta_module_1.ActaModule],
         controllers: [certificates_controller_1.CertificatesController],
         providers: [certificates_service_1.CertificatesService],
         exports: [certificates_service_1.CertificatesService],

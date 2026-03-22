@@ -19,13 +19,45 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const acta_certificate_entity_1 = require("./entities/acta-certificate.entity");
 const user_entity_1 = require("../users/entities/user.entity");
+const acta_service_1 = require("../acta/acta.service");
 let CertificatesService = CertificatesService_1 = class CertificatesService {
     certRepo;
     usersRepo;
+    actaService;
     logger = new common_1.Logger(CertificatesService_1.name);
-    constructor(certRepo, usersRepo) {
+    constructor(certRepo, usersRepo, actaService) {
         this.certRepo = certRepo;
         this.usersRepo = usersRepo;
+        this.actaService = actaService;
+    }
+    async issueActaCertificate(data) {
+        const { txId, vcId } = await this.actaService.issueCredential(data.userId, data.chapterId, data.chapterTitle, data.examScore);
+        const cert = this.certRepo.create({
+            userId: data.userId,
+            chapterId: data.chapterId,
+            chapterTitle: data.chapterTitle,
+            actaVcId: vcId,
+            txHash: txId,
+            examScore: data.examScore,
+            type: 'official',
+            status: 'issued',
+        });
+        const saved = await this.certRepo.save(cert);
+        this.logger.log(`[ACTA] Certificate issued: vcId=${vcId}, txId=${txId}, user=${data.userId}`);
+        return {
+            id: saved.id,
+            chapterId: saved.chapterId,
+            chapterTitle: saved.chapterTitle,
+            actaVcId: saved.actaVcId,
+            txHash: saved.txHash,
+            examScore: saved.examScore,
+            status: saved.status,
+            type: saved.type,
+            issuedAt: saved.issuedAt,
+            stellarExplorerUrl: saved.txHash
+                ? `https://stellar.expert/explorer/testnet/tx/${saved.txHash}`
+                : null,
+        };
     }
     async storeCertificate(data) {
         const cert = this.certRepo.create({
@@ -38,7 +70,6 @@ let CertificatesService = CertificatesService_1 = class CertificatesService {
         const certs = await this.certRepo.find({
             where: { userId },
             order: { issuedAt: 'DESC' },
-            relations: ['chapter'],
         });
         return certs.map((c) => ({
             id: c.id,
@@ -58,12 +89,19 @@ let CertificatesService = CertificatesService_1 = class CertificatesService {
     async verifyCertificate(actaVcId) {
         const cert = await this.certRepo.findOne({
             where: { actaVcId },
-            relations: ['user', 'chapter'],
+            relations: ['user'],
         });
         if (!cert)
             throw new common_1.NotFoundException('Certificate not found');
+        let onChainStatus = { status: 'unknown' };
+        try {
+            onChainStatus = await this.actaService.verifyCredential(actaVcId);
+        }
+        catch {
+        }
         return {
             valid: cert.status === 'issued',
+            onChainStatus: onChainStatus.status,
             certificate: {
                 id: cert.id,
                 chapterTitle: cert.chapterTitle,
@@ -71,6 +109,9 @@ let CertificatesService = CertificatesService_1 = class CertificatesService {
                 examScore: cert.examScore,
                 issuedAt: cert.issuedAt,
                 txHash: cert.txHash,
+                stellarExplorerUrl: cert.txHash
+                    ? `https://stellar.expert/explorer/testnet/tx/${cert.txHash}`
+                    : null,
             },
         };
     }
@@ -81,6 +122,7 @@ exports.CertificatesService = CertificatesService = CertificatesService_1 = __de
     __param(0, (0, typeorm_1.InjectRepository)(acta_certificate_entity_1.ActaCertificate)),
     __param(1, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
-        typeorm_2.Repository])
+        typeorm_2.Repository,
+        acta_service_1.ActaService])
 ], CertificatesService);
 //# sourceMappingURL=certificates.service.js.map

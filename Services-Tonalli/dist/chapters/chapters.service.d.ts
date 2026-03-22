@@ -76,7 +76,7 @@ export declare class ChaptersService {
             lockedUntil: null;
         }[];
         completionPercent: number;
-        isPremium: boolean;
+        plan: "free" | "pro" | "max";
         accessible: boolean;
         lockedReason: string | null;
     }>;
@@ -135,6 +135,7 @@ export declare class ChaptersService {
     unlockFinalExam(chapterId: string, userId: string): Promise<{
         unlocked: boolean;
         moduleId: string;
+        certCost: number;
     }>;
     getModuleContent(moduleId: string): Promise<{
         id: string;

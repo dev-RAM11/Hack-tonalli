@@ -114,7 +114,7 @@ export declare class ChaptersController {
             lockedUntil: null;
         }[];
         completionPercent: number;
-        isPremium: boolean;
+        plan: "free" | "pro" | "max";
         accessible: boolean;
         lockedReason: string | null;
     }>;
@@ -122,6 +122,7 @@ export declare class ChaptersController {
     unlockFinalExam(id: string, req: any): Promise<{
         unlocked: boolean;
         moduleId: string;
+        certCost: number;
     }>;
     update(id: string, dto: UpdateChapterDto): Promise<import("./entities/chapter.entity").Chapter>;
     togglePublish(id: string): Promise<import("./entities/chapter.entity").Chapter>;

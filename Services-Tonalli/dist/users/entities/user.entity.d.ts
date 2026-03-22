@@ -8,7 +8,7 @@ export declare class User {
     username: string;
     displayName: string;
     city: string;
-    role: 'admin' | 'user';
+    role: 'admin' | 'user' | 'designer';
     stellarPublicKey: string;
     stellarSecretKey: string;
     xp: number;
@@ -16,8 +16,9 @@ export declare class User {
     currentStreak: number;
     lastActivityDate: string;
     isFunded: boolean;
-    isPremium: boolean;
-    subscriptionExpiry: Date;
+    externalWalletAddress: string;
+    walletType: 'custodial' | 'external' | 'hybrid';
+    plan: 'free' | 'pro' | 'max';
     dateOfBirth: string;
     character: string;
     isFirstLogin: boolean;

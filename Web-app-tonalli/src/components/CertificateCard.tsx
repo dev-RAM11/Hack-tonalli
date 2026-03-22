@@ -1,10 +1,18 @@
 import type { ActaCertificateData } from '../types';
+import { generateCertificatePdf } from '../utils/generateCertificatePdf';
+import { useAuthStore } from '../stores/authStore';
 
 interface Props {
   cert: ActaCertificateData;
 }
 
 export function CertificateCard({ cert }: Props) {
+  const { user } = useAuthStore();
+
+  const handleDownloadPdf = () => {
+    generateCertificatePdf(cert, user?.username || 'Estudiante');
+  };
+
   return (
     <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700 overflow-hidden">
       {/* Header */}
@@ -35,7 +43,7 @@ export function CertificateCard({ cert }: Props) {
 
         <div className="flex justify-between text-sm">
           <span className="text-gray-400">Estado</span>
-          <span className={`font-bold ${cert.status === 'issued' ? 'text-green-400' : 'text-yellow-400'}`}>
+          <span className={`font-bold ${cert.status === 'issued' ? 'text-green-400' : cert.status === 'pending' ? 'text-yellow-400' : 'text-red-400'}`}>
             {cert.status === 'issued' ? 'Emitido' : cert.status === 'pending' ? 'Pendiente' : 'Error'}
           </span>
         </div>
@@ -64,8 +72,18 @@ export function CertificateCard({ cert }: Props) {
               Ver en Stellar
             </a>
           )}
-          <button className="flex-1 bg-blue-600 text-white text-sm py-2 rounded-lg hover:bg-blue-500 transition">
-            Compartir
+          <button
+            onClick={handleDownloadPdf}
+            className="flex-1 text-center text-sm py-2 rounded-lg transition"
+            style={{
+              background: 'linear-gradient(135deg, #e74c3c, #c0392b)',
+              color: '#fff',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: 600,
+            }}
+          >
+            Descargar PDF
           </button>
         </div>
       </div>

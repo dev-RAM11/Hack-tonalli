@@ -4,9 +4,10 @@ import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
 import { User } from './entities/user.entity';
 import { Streak } from './entities/streak.entity';
+import { StellarModule } from '../stellar/stellar.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Streak])],
+  imports: [TypeOrmModule.forFeature([User, Streak]), StellarModule],
   controllers: [UsersController],
   providers: [UsersService],
   exports: [UsersService],

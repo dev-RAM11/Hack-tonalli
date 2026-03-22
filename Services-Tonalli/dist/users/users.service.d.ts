@@ -12,6 +12,16 @@ export declare class UsersService {
     updateStreak(userId: string): Promise<User>;
     setupUser(userId: string, companion: string, avatarType: string): Promise<User>;
     getProfile(userId: string): Promise<any>;
-    upgradeToPremium(userId: string): Promise<User>;
+    upgradePlan(userId: string, plan: 'free' | 'pro' | 'max'): Promise<User>;
+    connectExternalWallet(userId: string, externalAddress: string): Promise<User>;
+    disconnectExternalWallet(userId: string): Promise<User>;
+    exportSecretKey(userId: string, password: string): Promise<{
+        secretKey: string;
+    }>;
+    getWalletInfo(userId: string): Promise<{
+        custodialAddress: string | null;
+        externalAddress: string | null;
+        walletType: string;
+    }>;
     getRankings(): Promise<any[]>;
 }

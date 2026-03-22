@@ -12,12 +12,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ActaCertificate = void 0;
 const typeorm_1 = require("typeorm");
 const user_entity_1 = require("../../users/entities/user.entity");
-const chapter_entity_1 = require("../../chapters/entities/chapter.entity");
 let ActaCertificate = class ActaCertificate {
     id;
     user;
     userId;
-    chapter;
     chapterId;
     chapterTitle;
     actaVcId;
@@ -40,10 +38,6 @@ __decorate([
     (0, typeorm_1.Column)(),
     __metadata("design:type", String)
 ], ActaCertificate.prototype, "userId", void 0);
-__decorate([
-    (0, typeorm_1.ManyToOne)(() => chapter_entity_1.Chapter),
-    __metadata("design:type", chapter_entity_1.Chapter)
-], ActaCertificate.prototype, "chapter", void 0);
 __decorate([
     (0, typeorm_1.Column)(),
     __metadata("design:type", String)

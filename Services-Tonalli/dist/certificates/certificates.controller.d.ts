@@ -9,14 +9,31 @@ export declare class CertificatesController {
         actaVcId: string;
         txHash: string;
         examScore: number;
-        status: "pending" | "issued" | "failed";
+        status: "issued" | "pending" | "failed";
         type: "official" | "achievement";
         issuedAt: Date;
         stellarExplorerUrl: string | null;
     }[]>;
+    issueActaCertificate(data: {
+        chapterId: string;
+        chapterTitle: string;
+        examScore: number;
+    }, req: any): Promise<{
+        id: string;
+        chapterId: string;
+        chapterTitle: string;
+        actaVcId: string;
+        txHash: string;
+        examScore: number;
+        status: "issued" | "pending" | "failed";
+        type: "official" | "achievement";
+        issuedAt: Date;
+        stellarExplorerUrl: string | null;
+    }>;
     storeCertificate(data: any, req: any): Promise<import("./entities/acta-certificate.entity").ActaCertificate>;
     verifyCertificate(vcId: string): Promise<{
         valid: boolean;
+        onChainStatus: string;
         certificate: {
             id: string;
             chapterTitle: string;
@@ -24,6 +41,7 @@ export declare class CertificatesController {
             examScore: number;
             issuedAt: Date;
             txHash: string;
+            stellarExplorerUrl: string | null;
         };
     }>;
 }

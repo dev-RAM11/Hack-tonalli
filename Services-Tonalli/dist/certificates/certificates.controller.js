@@ -24,6 +24,14 @@ let CertificatesController = class CertificatesController {
     getUserCertificates(req) {
         return this.certService.getUserCertificates(req.user.id);
     }
+    issueActaCertificate(data, req) {
+        return this.certService.issueActaCertificate({
+            userId: req.user.id,
+            chapterId: data.chapterId,
+            chapterTitle: data.chapterTitle,
+            examScore: data.examScore,
+        });
+    }
     storeCertificate(data, req) {
         return this.certService.storeCertificate({
             userId: req.user.id,
@@ -48,6 +56,15 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], CertificatesController.prototype, "getUserCertificates", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Post)('issue'),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", void 0)
+], CertificatesController.prototype, "issueActaCertificate", null);
 __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Post)('store'),

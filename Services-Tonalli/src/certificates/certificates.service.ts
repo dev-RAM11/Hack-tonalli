@@ -85,7 +85,6 @@ export class CertificatesService {
     const certs = await this.certRepo.find({
       where: { userId },
       order: { issuedAt: 'DESC' },
-      relations: ['chapter'],
     });
 
     return certs.map((c) => ({
@@ -108,7 +107,7 @@ export class CertificatesService {
   async verifyCertificate(actaVcId: string) {
     const cert = await this.certRepo.findOne({
       where: { actaVcId },
-      relations: ['user', 'chapter'],
+      relations: ['user'],
     });
 
     if (!cert) throw new NotFoundException('Certificate not found');

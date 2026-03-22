@@ -41,6 +41,19 @@ let UsersController = class UsersController {
         const plan = body.plan || 'pro';
         return this.usersService.upgradePlan(req.user.id, plan);
     }
+    async getRewardHistory(req) {
+        const user = await this.usersService.findById(req.user.id);
+        if (!user.stellarPublicKey)
+            return [];
+        return this.sorobanService.getRewardHistory(user.stellarPublicKey);
+    }
+    async getTotalRewards(req) {
+        const user = await this.usersService.findById(req.user.id);
+        if (!user.stellarPublicKey)
+            return { totalStroops: 0, totalXlm: 0 };
+        const totalStroops = await this.sorobanService.getUserTotalRewards(user.stellarPublicKey);
+        return { totalStroops, totalXlm: totalStroops / 10_000_000 };
+    }
     async getRankings() {
         return this.usersService.getRankings();
     }
@@ -132,6 +145,22 @@ __decorate([
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "upgradePlan", null);
+__decorate([
+    (0, common_1.Get)('users/me/rewards/history'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "getRewardHistory", null);
+__decorate([
+    (0, common_1.Get)('users/me/rewards/total'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "getTotalRewards", null);
 __decorate([
     (0, common_1.Get)('rankings'),
     __metadata("design:type", Function),

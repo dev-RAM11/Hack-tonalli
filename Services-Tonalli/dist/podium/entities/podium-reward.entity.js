@@ -21,6 +21,7 @@ let PodiumReward = class PodiumReward {
     rewardUsd;
     rewardXlm;
     txHash;
+    nftTxHash;
     status;
     retainedUntil;
     createdAt;
@@ -58,6 +59,10 @@ __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", String)
 ], PodiumReward.prototype, "txHash", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], PodiumReward.prototype, "nftTxHash", void 0);
 __decorate([
     (0, typeorm_1.Column)({ default: 'pending' }),
     __metadata("design:type", String)

@@ -19,6 +19,11 @@ export declare class UsersController {
     upgradePlan(req: any, body: {
         plan: 'free' | 'pro' | 'max';
     }): Promise<import("./entities/user.entity").User>;
+    getRewardHistory(req: any): Promise<import("../stellar/soroban.service").RewardHistoryEntry[]>;
+    getTotalRewards(req: any): Promise<{
+        totalStroops: number;
+        totalXlm: number;
+    }>;
     getRankings(): Promise<any[]>;
     getWalletBalance(req: any): Promise<{
         custodialAddress: string | null;

@@ -16,6 +16,8 @@ export declare class AuthService {
             username: string;
             displayName: string;
             xp: number;
+            totalXp: number;
+            currentStreak: number;
             walletAddress: string;
             externalWalletAddress: string | null;
             walletType: "custodial" | "external" | "hybrid";

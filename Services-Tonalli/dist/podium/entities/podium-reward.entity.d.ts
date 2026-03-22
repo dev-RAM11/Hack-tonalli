@@ -8,6 +8,7 @@ export declare class PodiumReward {
     rewardUsd: number;
     rewardXlm: string;
     txHash: string;
+    nftTxHash: string;
     status: 'pending' | 'paid' | 'retained' | 'reassigned';
     retainedUntil: Date;
     createdAt: Date;

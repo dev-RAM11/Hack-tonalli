@@ -12,6 +12,8 @@ export declare class AuthController {
             username: string;
             displayName: string;
             xp: number;
+            totalXp: number;
+            currentStreak: number;
             walletAddress: string;
             externalWalletAddress: string | null;
             walletType: "custodial" | "external" | "hybrid";

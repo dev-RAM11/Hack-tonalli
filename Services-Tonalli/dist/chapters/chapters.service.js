@@ -407,6 +407,25 @@ let ChaptersService = class ChaptersService {
                     catch (e) {
                         console.error('NFT mint error:', e.message);
                     }
+                    try {
+                        const xlmAmount = (mod.xpReward || 50) / 100;
+                        await this.sorobanService.rewardUser({
+                            userPublicKey: user.stellarPublicKey,
+                            lessonId: mod.chapterId,
+                            amountXlm: xlmAmount,
+                            score,
+                        });
+                    }
+                    catch (e) {
+                        console.error('On-chain reward error:', e.message);
+                    }
+                    try {
+                        const tnlAmount = (mod.xpReward || 50) / 10;
+                        await this.sorobanService.mintTokens(user.stellarPublicKey, tnlAmount);
+                    }
+                    catch (e) {
+                        console.error('TNL mint error:', e.message);
+                    }
                 }
             }
             else if (!isFinalExam && !progress.quizCompleted) {
@@ -419,6 +438,27 @@ let ChaptersService = class ChaptersService {
                     user.xp += mod.xpReward;
                     user.totalXp += mod.xpReward;
                     await this.usersRepo.save(user);
+                    if (user.stellarPublicKey) {
+                        try {
+                            const xlmAmount = (mod.xpReward || 30) / 100;
+                            await this.sorobanService.rewardUser({
+                                userPublicKey: user.stellarPublicKey,
+                                lessonId: mod.id,
+                                amountXlm: xlmAmount,
+                                score,
+                            });
+                        }
+                        catch (e) {
+                            console.error('On-chain reward error (module):', e.message);
+                        }
+                        try {
+                            const tnlAmount = (mod.xpReward || 30) / 10;
+                            await this.sorobanService.mintTokens(user.stellarPublicKey, tnlAmount);
+                        }
+                        catch (e) {
+                            console.error('TNL mint error (module):', e.message);
+                        }
+                    }
                 }
             }
         }

@@ -45,15 +45,22 @@ var StellarService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StellarService = void 0;
 const common_1 = require("@nestjs/common");
+const config_1 = require("@nestjs/config");
 const StellarSdk = __importStar(require("@stellar/stellar-sdk"));
 let StellarService = StellarService_1 = class StellarService {
+    configService;
     logger = new common_1.Logger(StellarService_1.name);
     server;
     networkPassphrase;
-    constructor() {
-        const horizonUrl = process.env.STELLAR_HORIZON_URL || 'https://horizon-testnet.stellar.org';
+    rewardPoolSecret;
+    constructor(configService) {
+        this.configService = configService;
+        const horizonUrl = this.configService.get('STELLAR_HORIZON_URL') ||
+            'https://horizon-testnet.stellar.org';
         this.server = new StellarSdk.Horizon.Server(horizonUrl);
         this.networkPassphrase = StellarSdk.Networks.TESTNET;
+        this.rewardPoolSecret =
+            this.configService.get('REWARD_POOL_SECRET') || null;
     }
     createKeypair() {
         const keypair = StellarSdk.Keypair.random();
@@ -162,6 +169,72 @@ let StellarService = StellarService_1 = class StellarService {
             };
         }
     }
+    async sendRewardFromAdmin(toPublicKey, amount) {
+        if (!this.rewardPoolSecret) {
+            this.logger.warn('REWARD_POOL_SECRET not set — simulating reward transfer');
+            return {
+                success: true,
+                txHash: `SIMULATED_ADMIN_REWARD_${Date.now()}`,
+            };
+        }
+        return this.sendXLMReward(this.rewardPoolSecret, toPublicKey, amount);
+    }
+    async mintNFTFromAdmin(userPublicKey, lessonTitle, lessonId) {
+        if (!this.rewardPoolSecret) {
+            this.logger.warn('REWARD_POOL_SECRET not set — simulating NFT mint');
+            return {
+                success: true,
+                txHash: `SIMULATED_NFT_${Date.now()}_${lessonId.substring(0, 8)}`,
+                assetCode: 'TNLCERT',
+                issuerPublicKey: userPublicKey,
+            };
+        }
+        try {
+            const adminKeypair = StellarSdk.Keypair.fromSecret(this.rewardPoolSecret);
+            const adminAccount = await this.server.loadAccount(adminKeypair.publicKey());
+            const sanitized = lessonTitle
+                .replace(/[^A-Z0-9]/gi, '')
+                .toUpperCase()
+                .substring(0, 8);
+            const assetCode = `TNL${sanitized}`.substring(0, 12);
+            const transaction = new StellarSdk.TransactionBuilder(adminAccount, {
+                fee: StellarSdk.BASE_FEE,
+                networkPassphrase: this.networkPassphrase,
+            })
+                .addOperation(StellarSdk.Operation.manageData({
+                name: `TONALLI_CERT_${lessonId.substring(0, 20)}`,
+                value: Buffer.from(JSON.stringify({
+                    lesson: lessonId,
+                    title: lessonTitle,
+                    owner: userPublicKey,
+                    platform: 'Tonalli',
+                    issuedAt: new Date().toISOString(),
+                }).substring(0, 64)),
+            }))
+                .addMemo(StellarSdk.Memo.text('Tonalli NFT Certificate'))
+                .setTimeout(60)
+                .build();
+            transaction.sign(adminKeypair);
+            const result = await this.server.submitTransaction(transaction);
+            this.logger.log(`NFT minted (admin) for lesson ${lessonId}: ${result.hash}`);
+            return {
+                success: true,
+                txHash: result.hash,
+                assetCode,
+                issuerPublicKey: adminKeypair.publicKey(),
+            };
+        }
+        catch (error) {
+            this.logger.error(`Admin NFT mint error: ${error.message}`);
+            return {
+                success: false,
+                txHash: `SIMULATED_NFT_${Date.now()}_${lessonId.substring(0, 8)}`,
+                assetCode: 'TNLCERT',
+                issuerPublicKey: userPublicKey,
+                error: error.message,
+            };
+        }
+    }
     async ensureAccountFunded(publicKey) {
         const balance = await this.getBalance(publicKey);
         if (parseFloat(balance) < 1) {
@@ -174,6 +247,6 @@ let StellarService = StellarService_1 = class StellarService {
 exports.StellarService = StellarService;
 exports.StellarService = StellarService = StellarService_1 = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [])
+    __metadata("design:paramtypes", [config_1.ConfigService])
 ], StellarService);
 //# sourceMappingURL=stellar.service.js.map

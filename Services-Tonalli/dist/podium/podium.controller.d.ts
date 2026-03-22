@@ -23,6 +23,17 @@ export declare class PodiumController {
             isCurrentUser: boolean;
         }[];
     }>;
+    getUserPodiumNfts(req: any): Promise<{
+        id: string;
+        week: string;
+        position: number;
+        rewardUsd: number;
+        rewardXlm: string;
+        txHash: string;
+        nftTxHash: string;
+        createdAt: Date;
+        stellarExplorerUrl: string | null;
+    }[]>;
     getGlobalLeaderboard(): Promise<{
         rank: number;
         userId: string;

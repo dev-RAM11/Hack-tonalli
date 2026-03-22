@@ -21,6 +21,7 @@ const progress_entity_1 = require("./entities/progress.entity");
 const nft_certificate_entity_1 = require("./entities/nft-certificate.entity");
 const users_service_1 = require("../users/users.service");
 const stellar_service_1 = require("../stellar/stellar.service");
+const soroban_service_1 = require("../stellar/soroban.service");
 const lesson_entity_1 = require("../lessons/entities/lesson.entity");
 const quiz_entity_1 = require("../lessons/entities/quiz.entity");
 let ProgressService = ProgressService_1 = class ProgressService {
@@ -30,14 +31,16 @@ let ProgressService = ProgressService_1 = class ProgressService {
     quizRepository;
     usersService;
     stellarService;
+    sorobanService;
     logger = new common_1.Logger(ProgressService_1.name);
-    constructor(progressRepository, nftRepository, lessonRepository, quizRepository, usersService, stellarService) {
+    constructor(progressRepository, nftRepository, lessonRepository, quizRepository, usersService, stellarService, sorobanService) {
         this.progressRepository = progressRepository;
         this.nftRepository = nftRepository;
         this.lessonRepository = lessonRepository;
         this.quizRepository = quizRepository;
         this.usersService = usersService;
         this.stellarService = stellarService;
+        this.sorobanService = sorobanService;
     }
     async submitQuiz(userId, lessonId, answers) {
         const quiz = await this.quizRepository.findOne({ where: { lessonId } });
@@ -92,20 +95,27 @@ let ProgressService = ProgressService_1 = class ProgressService {
             if (user.stellarPublicKey && lesson?.xlmReward) {
                 try {
                     await this.stellarService.ensureAccountFunded(user.stellarPublicKey);
-                    if (user.stellarSecretKey) {
-                        const xlmResult = await this.stellarService.sendXLMReward(user.stellarSecretKey, user.stellarPublicKey, lesson.xlmReward);
-                        if (xlmResult.success) {
-                            xlmReward = { amount: lesson.xlmReward, txHash: xlmResult.txHash };
-                        }
+                    const xlmResult = await this.stellarService.sendRewardFromAdmin(user.stellarPublicKey, lesson.xlmReward);
+                    if (xlmResult.success) {
+                        xlmReward = { amount: lesson.xlmReward, txHash: xlmResult.txHash };
                     }
                 }
                 catch (error) {
                     this.logger.error(`XLM reward failed: ${error.message}`);
                 }
             }
-            if (user.stellarPublicKey && user.stellarSecretKey && lesson) {
+            if (user.stellarPublicKey && lesson) {
                 try {
-                    const nftResult = await this.stellarService.mintNFT(user.stellarPublicKey, user.stellarSecretKey, lesson.title, lessonId);
+                    const tnlAmount = (lesson.xpReward || 50) / 10;
+                    await this.sorobanService.mintTokens(user.stellarPublicKey, tnlAmount);
+                }
+                catch (error) {
+                    this.logger.error(`TNL mint failed: ${error.message}`);
+                }
+            }
+            if (user.stellarPublicKey && lesson) {
+                try {
+                    const nftResult = await this.stellarService.mintNFTFromAdmin(user.stellarPublicKey, lesson.title, lessonId);
                     const cert = this.nftRepository.create({
                         userId,
                         lessonId,
@@ -195,6 +205,7 @@ exports.ProgressService = ProgressService = ProgressService_1 = __decorate([
         typeorm_2.Repository,
         typeorm_2.Repository,
         users_service_1.UsersService,
-        stellar_service_1.StellarService])
+        stellar_service_1.StellarService,
+        soroban_service_1.SorobanService])
 ], ProgressService);
 //# sourceMappingURL=progress.service.js.map

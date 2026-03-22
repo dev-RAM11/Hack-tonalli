@@ -3,14 +3,16 @@ import { WeeklyScore } from './entities/weekly-score.entity';
 import { PodiumReward } from './entities/podium-reward.entity';
 import { User } from '../users/entities/user.entity';
 import { StellarService } from '../stellar/stellar.service';
+import { SorobanService } from '../stellar/soroban.service';
 export declare class PodiumService {
     private readonly scoresRepo;
     private readonly rewardsRepo;
     private readonly usersRepo;
     private readonly stellarService;
+    private readonly sorobanService;
     private readonly logger;
     private paused;
-    constructor(scoresRepo: Repository<WeeklyScore>, rewardsRepo: Repository<PodiumReward>, usersRepo: Repository<User>, stellarService: StellarService);
+    constructor(scoresRepo: Repository<WeeklyScore>, rewardsRepo: Repository<PodiumReward>, usersRepo: Repository<User>, stellarService: StellarService, sorobanService: SorobanService);
     getCurrentWeek(): string;
     updateScore(userId: string): Promise<void>;
     recordChapterCompletion(userId: string, examScore: number): Promise<void>;
@@ -55,6 +57,17 @@ export declare class PodiumService {
         xp: number;
         streak: number;
         character: string;
+    }[]>;
+    getUserPodiumNfts(userId: string): Promise<{
+        id: string;
+        week: string;
+        position: number;
+        rewardUsd: number;
+        rewardXlm: string;
+        txHash: string;
+        nftTxHash: string;
+        createdAt: Date;
+        stellarExplorerUrl: string | null;
     }[]>;
     pauseRewards(): void;
     resumeRewards(): void;

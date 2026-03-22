@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Wallet, ExternalLink, Copy, Check, LogOut, Download, Send, Link2 } from 'lucide-react';
+import { Wallet, ExternalLink, Copy, Check, LogOut, Download, Send, Link2, Smartphone } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { apiService } from '../services/api';
 import type { WalletBalance } from '../types';
 import { useT } from '../hooks/useT';
@@ -28,6 +29,7 @@ export function WalletPanel({
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [exportPassword, setExportPassword] = useState('');
   const [exportedKey, setExportedKey] = useState('');
+  const [showDecaf, setShowDecaf] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
@@ -272,6 +274,18 @@ export function WalletPanel({
           <Download size={12} /> Exportar
         </button>
 
+        <button
+          onClick={() => { setShowDecaf(!showDecaf); setShowConnect(false); setShowWithdraw(false); setShowExport(false); }}
+          style={{
+            flex: 1, padding: '8px 10px', borderRadius: 8, border: 'none',
+            background: 'linear-gradient(135deg, #6C3CE1, #4A90D9)',
+            color: '#fff', fontSize: '0.75rem',
+            fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+          }}
+        >
+          <Smartphone size={12} /> Decaf
+        </button>
+
         {walletAddress && (
           <a
             href={`https://stellar.expert/explorer/testnet/account/${walletAddress}`}
@@ -420,6 +434,135 @@ export function WalletPanel({
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Decaf Wallet Download */}
+      {showDecaf && (
+        <div style={{ marginTop: 12, padding: 16, background: 'var(--background)', borderRadius: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <div style={{
+              width: 32, height: 32, borderRadius: 8,
+              background: 'linear-gradient(135deg, #6C3CE1, #4A90D9)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Smartphone size={16} color="#fff" />
+            </div>
+            <div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 800 }}>Decaf Wallet</div>
+              <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                La wallet mas facil para Stellar
+              </div>
+            </div>
+          </div>
+
+          {/* Download links */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+            <a
+              href="https://play.google.com/store/apps/details?id=so.decaf.wallet"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                flex: 1, padding: '10px 12px', borderRadius: 8,
+                background: 'rgba(46,139,63,0.12)', border: '1px solid rgba(46,139,63,0.3)',
+                color: 'var(--primary)', fontSize: '0.75rem', fontWeight: 700,
+                textDecoration: 'none', textAlign: 'center',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              }}
+            >
+              <Download size={14} />
+              Android
+            </a>
+            <a
+              href="https://apps.apple.com/app/decaf-wallet/id1661750583"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                flex: 1, padding: '10px 12px', borderRadius: 8,
+                background: 'rgba(155,89,182,0.12)', border: '1px solid rgba(155,89,182,0.3)',
+                color: '#9B59B6', fontSize: '0.75rem', fontWeight: 700,
+                textDecoration: 'none', textAlign: 'center',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              }}
+            >
+              <Download size={14} />
+              iOS
+            </a>
+          </div>
+
+          {/* QR Codes */}
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginBottom: 16 }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{
+                background: '#fff', borderRadius: 10, padding: 10,
+                display: 'inline-block', marginBottom: 6,
+              }}>
+                <QRCodeSVG
+                  value="https://play.google.com/store/apps/details?id=so.decaf.wallet"
+                  size={100}
+                  level="M"
+                />
+              </div>
+              <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                Android
+              </div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{
+                background: '#fff', borderRadius: 10, padding: 10,
+                display: 'inline-block', marginBottom: 6,
+              }}>
+                <QRCodeSVG
+                  value="https://apps.apple.com/app/decaf-wallet/id1661750583"
+                  size={100}
+                  level="M"
+                />
+              </div>
+              <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                iOS
+              </div>
+            </div>
+          </div>
+
+          {/* Video tutorial */}
+          <div style={{
+            background: 'rgba(108,60,225,0.08)',
+            border: '1px solid rgba(108,60,225,0.2)',
+            borderRadius: 10,
+            overflow: 'hidden',
+          }}>
+            <div style={{
+              padding: '10px 12px',
+              fontSize: '0.75rem', fontWeight: 700,
+              display: 'flex', alignItems: 'center', gap: 6,
+              color: '#6C3CE1',
+            }}>
+              <ExternalLink size={12} />
+              Tutorial: Como configurar Decaf Wallet
+            </div>
+            <div style={{
+              position: 'relative',
+              paddingBottom: '56.25%',
+              height: 0,
+              overflow: 'hidden',
+            }}>
+              {/* TODO: Reemplazar VIDEO_ID con el ID del video tutorial de Decaf */}
+              <iframe
+                src="https://www.youtube.com/embed/VIDEO_ID"
+                title="Tutorial Decaf Wallet"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  border: 'none',
+                }}
+              />
+            </div>
+          </div>
         </div>
       )}
 

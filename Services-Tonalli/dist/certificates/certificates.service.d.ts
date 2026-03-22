@@ -20,7 +20,7 @@ export declare class CertificatesService {
         actaVcId: string;
         txHash: string;
         examScore: number;
-        status: "issued" | "pending" | "failed";
+        status: "pending" | "issued" | "failed";
         type: "official" | "achievement";
         issuedAt: Date;
         stellarExplorerUrl: string | null;
@@ -41,7 +41,7 @@ export declare class CertificatesService {
         actaVcId: string;
         txHash: string;
         examScore: number;
-        status: "issued" | "pending" | "failed";
+        status: "pending" | "issued" | "failed";
         type: "official" | "achievement";
         issuedAt: Date;
         stellarExplorerUrl: string | null;

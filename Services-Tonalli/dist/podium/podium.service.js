@@ -22,18 +22,21 @@ const weekly_score_entity_1 = require("./entities/weekly-score.entity");
 const podium_reward_entity_1 = require("./entities/podium-reward.entity");
 const user_entity_1 = require("../users/entities/user.entity");
 const stellar_service_1 = require("../stellar/stellar.service");
+const soroban_service_1 = require("../stellar/soroban.service");
 let PodiumService = PodiumService_1 = class PodiumService {
     scoresRepo;
     rewardsRepo;
     usersRepo;
     stellarService;
+    sorobanService;
     logger = new common_1.Logger(PodiumService_1.name);
     paused = false;
-    constructor(scoresRepo, rewardsRepo, usersRepo, stellarService) {
+    constructor(scoresRepo, rewardsRepo, usersRepo, stellarService, sorobanService) {
         this.scoresRepo = scoresRepo;
         this.rewardsRepo = rewardsRepo;
         this.usersRepo = usersRepo;
         this.stellarService = stellarService;
+        this.sorobanService = sorobanService;
     }
     getCurrentWeek() {
         const now = new Date();
@@ -137,6 +140,27 @@ let PodiumService = PodiumService_1 = class PodiumService {
             character: u.character || 'chima',
         }));
     }
+    async getUserPodiumNfts(userId) {
+        const rewards = await this.rewardsRepo.find({
+            where: { userId },
+            order: { createdAt: 'DESC' },
+        });
+        return rewards
+            .filter((r) => r.status === 'paid')
+            .map((r) => ({
+            id: r.id,
+            week: r.week,
+            position: r.position,
+            rewardUsd: r.rewardUsd,
+            rewardXlm: r.rewardXlm,
+            txHash: r.txHash,
+            nftTxHash: r.nftTxHash,
+            createdAt: r.createdAt,
+            stellarExplorerUrl: r.nftTxHash
+                ? `https://stellar.expert/explorer/testnet/tx/${r.nftTxHash}`
+                : null,
+        }));
+    }
     pauseRewards() {
         this.paused = true;
         this.logger.warn('⚠️ Podium rewards PAUSED (circuit breaker activated)');
@@ -206,6 +230,23 @@ let PodiumService = PodiumService_1 = class PodiumService {
                     reward.status = 'pending';
                 }
                 reward.txHash = txHash;
+                try {
+                    const xlmStroops = Math.round(parseFloat(xlmAmount) * 10_000_000);
+                    const nftResult = await this.sorobanService.mintPodiumNft({
+                        week: targetWeek,
+                        userPublicKey: user.stellarPublicKey,
+                        rank: i + 1,
+                        xlmRewardStroops: xlmStroops,
+                        txHash,
+                    });
+                    if (nftResult.success) {
+                        reward.nftTxHash = nftResult.txHash;
+                        this.logger.log(`Podium NFT minted for ${user.username} (rank ${i + 1}), tx=${nftResult.txHash}`);
+                    }
+                }
+                catch (nftErr) {
+                    this.logger.error(`Podium NFT mint failed for ${user.username}: ${nftErr.message}`);
+                }
             }
             else {
                 reward.status = 'retained';
@@ -232,6 +273,7 @@ exports.PodiumService = PodiumService = PodiumService_1 = __decorate([
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
-        stellar_service_1.StellarService])
+        stellar_service_1.StellarService,
+        soroban_service_1.SorobanService])
 ], PodiumService);
 //# sourceMappingURL=podium.service.js.map

@@ -26,6 +26,9 @@ let PodiumController = class PodiumController {
     getWeeklyLeaderboard(req) {
         return this.podiumService.getWeeklyLeaderboard(req.user.id);
     }
+    getUserPodiumNfts(req) {
+        return this.podiumService.getUserPodiumNfts(req.user.id);
+    }
     getGlobalLeaderboard() {
         return this.podiumService.getGlobalLeaderboard();
     }
@@ -53,6 +56,14 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], PodiumController.prototype, "getWeeklyLeaderboard", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Get)('nfts'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], PodiumController.prototype, "getUserPodiumNfts", null);
 __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Get)('global'),

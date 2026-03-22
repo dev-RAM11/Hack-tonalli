@@ -23,6 +23,8 @@ let SorobanService = SorobanService_1 = class SorobanService {
     networkPassphrase;
     nftContractId;
     rewardsContractId;
+    tokenContractId;
+    podiumNftContractId;
     constructor(configService) {
         this.configService = configService;
         const horizonUrl = this.configService.get('STELLAR_SOROBAN_URL') ||
@@ -42,6 +44,10 @@ let SorobanService = SorobanService_1 = class SorobanService {
         this.nftContractId = this.configService.get('NFT_CONTRACT_ID') || '';
         this.rewardsContractId =
             this.configService.get('REWARDS_CONTRACT_ID') || '';
+        this.tokenContractId =
+            this.configService.get('TOKEN_CONTRACT_ID') || '';
+        this.podiumNftContractId =
+            this.configService.get('PODIUM_NFT_CONTRACT_ID') || '';
     }
     async mintCertificate(params) {
         if (!this.nftContractId) {
@@ -146,6 +152,166 @@ let SorobanService = SorobanService_1 = class SorobanService {
             return this.mockRewardUser(params);
         }
     }
+    async mintTokens(toPublicKey, amount) {
+        if (!this.tokenContractId) {
+            this.logger.warn('TOKEN_CONTRACT_ID not set — using mock response');
+            return this.mockMintTokens(toPublicKey, amount);
+        }
+        try {
+            const contract = new stellar_sdk_1.Contract(this.tokenContractId);
+            const rawAmount = BigInt(Math.round(amount * 10_000_000));
+            const operation = contract.call('mint', new stellar_sdk_1.Address(toPublicKey).toScVal(), (0, stellar_sdk_1.nativeToScVal)(rawAmount, { type: 'i128' }));
+            const txHash = await this.submitSorobanTransaction(operation);
+            this.logger.log(`TNL minted: ${amount} TNL to ${toPublicKey}, tx=${txHash}`);
+            return { success: true, txHash, amount };
+        }
+        catch (error) {
+            this.logger.error('Failed to mint TNL tokens', error);
+            return this.mockMintTokens(toPublicKey, amount);
+        }
+    }
+    async getTokenBalance(publicKey) {
+        if (!this.tokenContractId) {
+            return 0;
+        }
+        try {
+            const contract = new stellar_sdk_1.Contract(this.tokenContractId);
+            const operation = contract.call('balance', new stellar_sdk_1.Address(publicKey).toScVal());
+            const result = await this.simulateSorobanCall(operation);
+            if (!result)
+                return 0;
+            const rawBalance = (0, stellar_sdk_1.scValToNative)(result);
+            return Number(rawBalance) / 10_000_000;
+        }
+        catch (error) {
+            this.logger.error('Failed to get TNL balance', error);
+            return 0;
+        }
+    }
+    async initializeToken() {
+        if (!this.tokenContractId) {
+            return { success: false };
+        }
+        try {
+            const contract = new stellar_sdk_1.Contract(this.tokenContractId);
+            const operation = contract.call('initialize', new stellar_sdk_1.Address(this.adminKeypair.publicKey()).toScVal(), (0, stellar_sdk_1.nativeToScVal)(7, { type: 'u32' }), (0, stellar_sdk_1.nativeToScVal)('Tonalli', { type: 'string' }), (0, stellar_sdk_1.nativeToScVal)('TNL', { type: 'string' }));
+            const txHash = await this.submitSorobanTransaction(operation);
+            this.logger.log(`TNL token initialized, tx=${txHash}`);
+            return { success: true, txHash };
+        }
+        catch (error) {
+            this.logger.error('Failed to initialize TNL token', error);
+            return { success: false };
+        }
+    }
+    async mintPodiumNft(params) {
+        if (!this.podiumNftContractId) {
+            this.logger.warn('PODIUM_NFT_CONTRACT_ID not set — using mock response');
+            return this.mockMintPodiumNft(params);
+        }
+        try {
+            const contract = new stellar_sdk_1.Contract(this.podiumNftContractId);
+            const operation = contract.call('mint_podium_nft', (0, stellar_sdk_1.nativeToScVal)(params.week, { type: 'string' }), new stellar_sdk_1.Address(params.userPublicKey).toScVal(), (0, stellar_sdk_1.nativeToScVal)(params.rank, { type: 'u32' }), (0, stellar_sdk_1.nativeToScVal)(params.xlmRewardStroops, { type: 'u64' }), (0, stellar_sdk_1.nativeToScVal)(params.txHash, { type: 'string' }));
+            const txHash = await this.submitSorobanTransaction(operation);
+            this.logger.log(`Podium NFT minted: rank=${params.rank}, week=${params.week}, winner=${params.userPublicKey}, tx=${txHash}`);
+            return { success: true, txHash };
+        }
+        catch (error) {
+            this.logger.error('Failed to mint podium NFT', error);
+            return this.mockMintPodiumNft(params);
+        }
+    }
+    async getPodiumNft(week, userPublicKey) {
+        if (!this.podiumNftContractId)
+            return null;
+        try {
+            const contract = new stellar_sdk_1.Contract(this.podiumNftContractId);
+            const operation = contract.call('get_podium_nft', (0, stellar_sdk_1.nativeToScVal)(week, { type: 'string' }), new stellar_sdk_1.Address(userPublicKey).toScVal());
+            const result = await this.simulateSorobanCall(operation);
+            if (!result)
+                return null;
+            const native = (0, stellar_sdk_1.scValToNative)(result);
+            if (!native)
+                return null;
+            return {
+                rank: native.rank,
+                xlmReward: Number(native.xlm_reward),
+                week: native.week,
+                txHash: native.tx_hash,
+                issuedAt: Number(native.issued_at),
+                owner: native.owner,
+            };
+        }
+        catch (error) {
+            this.logger.error('Failed to get podium NFT', error);
+            return null;
+        }
+    }
+    async hasPodiumNft(week, userPublicKey) {
+        if (!this.podiumNftContractId)
+            return false;
+        try {
+            const contract = new stellar_sdk_1.Contract(this.podiumNftContractId);
+            const operation = contract.call('has_nft', (0, stellar_sdk_1.nativeToScVal)(week, { type: 'string' }), new stellar_sdk_1.Address(userPublicKey).toScVal());
+            const result = await this.simulateSorobanCall(operation);
+            return result ? (0, stellar_sdk_1.scValToNative)(result) : false;
+        }
+        catch (error) {
+            this.logger.error('Failed to check podium NFT', error);
+            return false;
+        }
+    }
+    async getRewardHistory(userPublicKey) {
+        if (!this.rewardsContractId)
+            return [];
+        try {
+            const contract = new stellar_sdk_1.Contract(this.rewardsContractId);
+            const operation = contract.call('get_reward_history', new stellar_sdk_1.Address(userPublicKey).toScVal());
+            const result = await this.simulateSorobanCall(operation);
+            if (!result)
+                return [];
+            const native = (0, stellar_sdk_1.scValToNative)(result);
+            return native.map((r) => ({
+                lessonId: r.lesson_id,
+                amount: Number(r.amount),
+                timestamp: Number(r.timestamp),
+            }));
+        }
+        catch (error) {
+            this.logger.error('Failed to get reward history', error);
+            return [];
+        }
+    }
+    async getUserTotalRewards(userPublicKey) {
+        if (!this.rewardsContractId)
+            return 0;
+        try {
+            const contract = new stellar_sdk_1.Contract(this.rewardsContractId);
+            const operation = contract.call('get_user_total_rewards', new stellar_sdk_1.Address(userPublicKey).toScVal());
+            const result = await this.simulateSorobanCall(operation);
+            if (!result)
+                return 0;
+            return Number((0, stellar_sdk_1.scValToNative)(result));
+        }
+        catch (error) {
+            this.logger.error('Failed to get user total rewards', error);
+            return 0;
+        }
+    }
+    async isLessonRewarded(userPublicKey, lessonId) {
+        if (!this.rewardsContractId)
+            return false;
+        try {
+            const contract = new stellar_sdk_1.Contract(this.rewardsContractId);
+            const operation = contract.call('is_lesson_rewarded', new stellar_sdk_1.Address(userPublicKey).toScVal(), (0, stellar_sdk_1.nativeToScVal)(lessonId, { type: 'string' }));
+            const result = await this.simulateSorobanCall(operation);
+            return result ? (0, stellar_sdk_1.scValToNative)(result) : false;
+        }
+        catch (error) {
+            this.logger.error('Failed to check lesson rewarded', error);
+            return false;
+        }
+    }
     async submitSorobanTransaction(operation) {
         const adminAccount = await this.rpc.getAccount(this.adminKeypair.publicKey());
         const tx = new stellar_sdk_1.TransactionBuilder(adminAccount, {
@@ -207,26 +373,6 @@ let SorobanService = SorobanService_1 = class SorobanService {
         const successResult = result;
         return successResult.returnValue;
     }
-    async getTokenBalance(userPublicKey) {
-        const tokenContractId = this.configService.get('TOKEN_CONTRACT_ID');
-        if (!tokenContractId) {
-            this.logger.warn('TOKEN_CONTRACT_ID not set — returning mock balance');
-            return 0;
-        }
-        try {
-            const contract = new stellar_sdk_1.Contract(tokenContractId);
-            const operation = contract.call('balance', new stellar_sdk_1.Address(userPublicKey).toScVal());
-            const result = await this.simulateSorobanCall(operation);
-            if (!result)
-                return 0;
-            const raw = (0, stellar_sdk_1.scValToNative)(result);
-            return Number(raw) / 10_000_000;
-        }
-        catch (error) {
-            this.logger.error('Failed to get token balance', error);
-            return 0;
-        }
-    }
     async mockMintCertificate(params) {
         const tokenId = Math.floor(Math.random() * 9000) + 1000;
         const txHash = Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
@@ -236,6 +382,16 @@ let SorobanService = SorobanService_1 = class SorobanService {
             txHash,
             contractId: 'MOCK_CONTRACT_' + this.network.toUpperCase(),
         };
+    }
+    async mockMintTokens(toPublicKey, amount) {
+        const txHash = Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+        this.logger.log(`[MOCK] TNL mint: ${amount} TNL to ${toPublicKey}, tx=${txHash}`);
+        return { success: true, txHash, amount };
+    }
+    async mockMintPodiumNft(params) {
+        const txHash = Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+        this.logger.log(`[MOCK] Podium NFT minted: rank=${params.rank}, week=${params.week}, winner=${params.userPublicKey}, tx=${txHash}`);
+        return { success: true, txHash };
     }
     async mockRewardUser(params) {
         const bonus = params.score === 100 ? params.amountXlm * 0.1 : 0;

@@ -153,9 +153,9 @@ export function ChaptersPage() {
 
                   {ch.accessible === false && ch.lockedReason && (
                     <div style={{ background: 'rgba(255,215,0,0.08)', border: '1px solid rgba(255,215,0,0.2)', borderRadius: 6, padding: '6px 10px', marginBottom: 8, fontSize: '0.75rem', color: '#f59e0b' }}>
-                      {ch.lockedReason === 'free_locked'
-                        ? `Disponible en semana ${ch.releaseWeek}. Hazte Premium para acceso anticipado.`
-                        : `Disponible pronto para usuarios Premium.`}
+                      {ch.lockedReason === 'free_limit'
+                        ? 'Capitulo exclusivo para planes Pro y Max.'
+                        : 'Disponible pronto.'}
                     </div>
                   )}
 

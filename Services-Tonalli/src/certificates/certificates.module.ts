@@ -4,9 +4,10 @@ import { CertificatesService } from './certificates.service';
 import { CertificatesController } from './certificates.controller';
 import { ActaCertificate } from './entities/acta-certificate.entity';
 import { User } from '../users/entities/user.entity';
+import { ActaModule } from '../acta/acta.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ActaCertificate, User])],
+  imports: [TypeOrmModule.forFeature([ActaCertificate, User]), ActaModule],
   controllers: [CertificatesController],
   providers: [CertificatesService],
   exports: [CertificatesService],

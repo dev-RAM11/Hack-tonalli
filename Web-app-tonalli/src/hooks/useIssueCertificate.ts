@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { apiService } from '../services/api';
+
 interface IssueCertificateParams {
   chapterId: string;
   chapterTitle: string;
   examScore: number;
 }
 
-// Certificate issuance without ACTA SDK dependency.
-// When a real ACTA_API_KEY is configured, the backend handles the on-chain issuance.
+// Certificate issuance via backend ACTA integration.
+// Backend handles vault, signing, and on-chain credential issuance.
 export function useIssueCertificate() {
   const [issuing, setIssuing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -16,25 +17,23 @@ export function useIssueCertificate() {
     setIssuing(true);
     setError(null);
 
-    const timestamp = Date.now();
-    const vcId = `vc:tonalli:chapter:${chapterId}:${timestamp}`;
-    const txId = `TONALLI_${timestamp}_${chapterId.substring(0, 8)}`;
-
     try {
-      const stored = await apiService.storeCertificate({
+      const result = await apiService.issueCertificate({
         chapterId,
         chapterTitle,
-        actaVcId: vcId,
-        txHash: txId,
         examScore,
-        type: 'official',
       });
 
       setIssuing(false);
-      return { success: true, certificate: stored, vcId, txHash: txId };
+      return {
+        success: true,
+        certificate: result,
+        vcId: result.actaVcId,
+        txHash: result.txHash,
+      };
     } catch (err: any) {
       console.error('[Certificate] Issuance error:', err);
-      setError(err.message || 'Error al emitir certificado');
+      setError(err?.response?.data?.message || err.message || 'Error al emitir certificado');
       setIssuing(false);
       return { success: false, error: err.message };
     }

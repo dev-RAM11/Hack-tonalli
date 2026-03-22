@@ -12,7 +12,7 @@ interface Props {
   lockedUntil: string | null;
   completed: boolean;
   bestScore: number;
-  isPremium: boolean;
+  plan: 'free' | 'pro' | 'max';
   chapterId: string;
   chapterTitle: string;
   onComplete: () => void;
@@ -20,7 +20,7 @@ interface Props {
 
 export function ChapterQuiz({
   moduleId, type, lives, lockedUntil, completed, bestScore,
-  isPremium, chapterId, chapterTitle, onComplete,
+  plan, chapterId, chapterTitle, onComplete,
 }: Props) {
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [currentQ, setCurrentQ] = useState(0);
@@ -389,7 +389,7 @@ export function ChapterQuiz({
         {result.livesRemaining !== undefined && result.livesRemaining >= 0 && !passed && (
           <div style={{ marginBottom: 20 }}>
             <LivesIndicator lives={result.livesRemaining} lockedUntil={result.lockedUntil} />
-            {result.livesRemaining === 1 && !isPremium && (
+            {result.livesRemaining === 1 && plan === 'free' && (
               <p style={{ color: '#E91E8C', fontWeight: 700, fontSize: '0.85rem', textAlign: 'center', marginTop: 8 }}>
                 {t('lastAttemptWarning')}
               </p>
@@ -543,7 +543,7 @@ export function ChapterQuiz({
         </div>
 
         {/* Last attempt warning */}
-        {lives === 1 && !isPremium && (
+        {lives === 1 && plan === 'free' && (
           <div style={{
             background: 'rgba(233,30,140,0.08)', border: '1px solid rgba(233,30,140,0.3)',
             borderRadius: 12, padding: '12px 16px', marginBottom: 16,
@@ -570,7 +570,7 @@ export function ChapterQuiz({
               t('rule4'),
               t('rule5'),
               t('rule6'),
-              ...(!isPremium ? [t('rule7')] : []),
+              ...(plan === 'free' ? [t('rule7')] : []),
             ].map((rule, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                 <span style={{ color: '#F5A623', flexShrink: 0, fontSize: '0.75rem', marginTop: 1 }}>•</span>
@@ -637,7 +637,7 @@ export function ChapterQuiz({
             {violations === 0 ? t('noViolations') : `${violations} ${violations > 1 ? t('violations') : t('violation')}`}
           </span>
         </div>
-        {!isPremium && (
+        {plan === 'free' && (
           <LivesIndicator lives={Math.max(0, (lives === -1 ? 2 : lives) - violations)} lockedUntil={null} />
         )}
       </div>

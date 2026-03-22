@@ -111,7 +111,7 @@ async function seed() {
     await userRepo.save(userRepo.create({
       email: adminEmail, username: 'TonalliAdmin', displayName: 'Administrador',
       password: await bcrypt.hash('Admin2024!', 10), city: 'Ciudad de México',
-      role: 'admin', xp: 0, totalXp: 0, currentStreak: 0, isPremium: true,
+      role: 'admin', xp: 0, totalXp: 0, currentStreak: 0, plan: 'max',
     }));
     console.log('✅ Admin user created: admin@tonalli.mx / Admin2024!');
   }
@@ -121,23 +121,36 @@ async function seed() {
     await userRepo.save(userRepo.create({
       email: userEmail, username: 'CryptoAzteca', displayName: 'Crypto Azteca',
       password: await bcrypt.hash('Demo2024!', 10), city: 'Guadalajara',
-      role: 'user', xp: 0, totalXp: 0, currentStreak: 0, isPremium: false,
+      role: 'user', xp: 0, totalXp: 0, currentStreak: 0, plan: 'free',
       dateOfBirth: '2000-05-15',
     }));
     console.log('✅ Demo user created: demo@tonalli.mx / Demo2024!');
   }
 
-  // Create a premium demo user
-  const premiumEmail = 'premium@tonalli.mx';
-  const existingPremium = await userRepo.findOne({ where: { email: premiumEmail } });
-  if (!existingPremium) {
+  // Create Pro demo user
+  const proEmail = 'pro@tonalli.mx';
+  const existingPro = await userRepo.findOne({ where: { email: proEmail } });
+  if (!existingPro) {
     await userRepo.save(userRepo.create({
-      email: premiumEmail, username: 'PremiumUser', displayName: 'Usuario Premium',
-      password: await bcrypt.hash('Premium2024!', 10), city: 'Monterrey',
-      role: 'user', xp: 500, totalXp: 500, currentStreak: 5, isPremium: true,
+      email: proEmail, username: 'ProUser', displayName: 'Usuario Pro',
+      password: await bcrypt.hash('Pro2024!', 10), city: 'Monterrey',
+      role: 'user', xp: 200, totalXp: 200, currentStreak: 3, plan: 'pro',
+      dateOfBirth: '1998-07-10',
+    }));
+    console.log('✅ Pro user created: pro@tonalli.mx / Pro2024!');
+  }
+
+  // Create Max demo user
+  const maxEmail = 'max@tonalli.mx';
+  const existingMax = await userRepo.findOne({ where: { email: maxEmail } });
+  if (!existingMax) {
+    await userRepo.save(userRepo.create({
+      email: maxEmail, username: 'MaxUser', displayName: 'Usuario Max',
+      password: await bcrypt.hash('Max2024!', 10), city: 'Guadalajara',
+      role: 'user', xp: 500, totalXp: 500, currentStreak: 5, plan: 'max',
       dateOfBirth: '1995-03-20',
     }));
-    console.log('✅ Premium user created: premium@tonalli.mx / Premium2024!');
+    console.log('✅ Max user created: max@tonalli.mx / Max2024!');
   }
 
   // ── Chapters: each has 4 modules ──────────────────────────────────────────

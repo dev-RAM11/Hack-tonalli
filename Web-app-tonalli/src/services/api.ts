@@ -54,12 +54,14 @@ function normalizeUser(u: any) {
     level: Math.floor((u.totalXp || u.xp || 0) / 1000) + 1,
     streak: u.currentStreak || 0,
     walletAddress: u.walletAddress || u.stellarPublicKey || '',
+    externalWalletAddress: u.externalWalletAddress || null,
+    walletType: u.walletType || 'custodial',
     character: u.character || 'chima',
     xlmEarned: u.xlmEarned || 0,
     lessonsCompleted: u.lessonsCompleted || 0,
     nftCertificates: u.nftCertificates || [],
     role: (u.role as 'admin' | 'user') || 'user',
-    isPremium: u.isPremium || false,
+    plan: u.plan || 'free',
     isFirstLogin: u.isFirstLogin ?? true,
     companion: u.companion || null,
     avatarType: u.avatarType || null,
@@ -237,6 +239,15 @@ export const apiService = {
     return res.data;
   },
 
+  issueCertificate: async (data: {
+    chapterId: string;
+    chapterTitle: string;
+    examScore: number;
+  }) => {
+    const res = await api.post('/certificates/issue', data);
+    return res.data;
+  },
+
   storeCertificate: async (data: {
     chapterId: string;
     chapterTitle: string;
@@ -259,8 +270,34 @@ export const apiService = {
     return res.data;
   },
 
-  upgradeToPremium: async () => {
-    const res = await api.patch('/users/me/upgrade');
+  upgradePlan: async (plan: 'free' | 'pro' | 'max') => {
+    const res = await api.patch('/users/me/upgrade', { plan });
+    return res.data;
+  },
+
+  // ── Wallet ──────────────────────────────────────────────────────────────
+  getWalletBalance: async () => {
+    const res = await api.get('/users/me/wallet/balance');
+    return res.data;
+  },
+
+  connectWallet: async (address: string) => {
+    const res = await api.post('/users/me/wallet/connect', { address });
+    return res.data;
+  },
+
+  disconnectWallet: async () => {
+    const res = await api.post('/users/me/wallet/disconnect');
+    return res.data;
+  },
+
+  withdrawToExternal: async (amount: string) => {
+    const res = await api.post('/users/me/wallet/withdraw', { amount });
+    return res.data;
+  },
+
+  exportSecretKey: async (password: string) => {
+    const res = await api.post('/users/me/wallet/export-secret', { password });
     return res.data;
   },
 

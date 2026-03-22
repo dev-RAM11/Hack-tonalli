@@ -1,6 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import * as bcrypt from 'bcryptjs';
+import * as StellarSdk from '@stellar/stellar-sdk';
 import { User } from './entities/user.entity';
 
 @Injectable()
@@ -86,9 +93,10 @@ export class UsersService {
       currentStreak: user.currentStreak,
       lastActivityDate: user.lastActivityDate,
       walletAddress: user.stellarPublicKey,
+      externalWalletAddress: user.externalWalletAddress || null,
+      walletType: user.walletType || 'custodial',
       character: user.character,
-      isPremium: user.isPremium || false,
-      subscriptionExpiry: user.subscriptionExpiry,
+      plan: user.plan || 'free',
       isFirstLogin: user.isFirstLogin,
       companion: user.companion,
       avatarType: user.avatarType,
@@ -96,10 +104,69 @@ export class UsersService {
     };
   }
 
-  async upgradeToPremium(userId: string): Promise<User> {
+  async upgradePlan(userId: string, plan: 'free' | 'pro' | 'max'): Promise<User> {
     const user = await this.findById(userId);
-    user.isPremium = true;
+    user.plan = plan;
     return this.userRepository.save(user);
+  }
+
+  // ── Wallet Methods ──────────────────────────────────────────────────────
+
+  async connectExternalWallet(
+    userId: string,
+    externalAddress: string,
+  ): Promise<User> {
+    // Validate Stellar address format
+    try {
+      StellarSdk.Keypair.fromPublicKey(externalAddress);
+    } catch {
+      throw new BadRequestException(
+        'Invalid Stellar address. Must be a valid ed25519 public key (starts with G)',
+      );
+    }
+
+    const user = await this.findById(userId);
+    user.externalWalletAddress = externalAddress;
+    user.walletType = 'hybrid';
+    return this.userRepository.save(user);
+  }
+
+  async disconnectExternalWallet(userId: string): Promise<User> {
+    const user = await this.findById(userId);
+    user.externalWalletAddress = '' as any;
+    user.walletType = 'custodial';
+    return this.userRepository.save(user);
+  }
+
+  async exportSecretKey(
+    userId: string,
+    password: string,
+  ): Promise<{ secretKey: string }> {
+    const user = await this.findById(userId);
+
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      throw new UnauthorizedException('Incorrect password');
+    }
+
+    if (!user.stellarSecretKey) {
+      throw new NotFoundException('No custodial wallet found');
+    }
+
+    return { secretKey: user.stellarSecretKey };
+  }
+
+  async getWalletInfo(userId: string): Promise<{
+    custodialAddress: string | null;
+    externalAddress: string | null;
+    walletType: string;
+  }> {
+    const user = await this.findById(userId);
+    return {
+      custodialAddress: user.stellarPublicKey || null,
+      externalAddress: user.externalWalletAddress || null,
+      walletType: user.walletType || 'custodial',
+    };
   }
 
   async getRankings(): Promise<any[]> {

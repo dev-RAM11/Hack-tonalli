@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tonalli — Integración Blockchain & Stellar</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0A0E17; color: #E2E8F0; font-family: 'Segoe UI', system-ui, sans-serif; padding: 40px 20px; }
+  h1 { text-align: center; font-size: 2.2rem; font-weight: 900; margin-bottom: 8px; background: linear-gradient(135deg, #F5A623, #E91E8C, #00D4AA); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .subtitle { text-align: center; color: #94A3B8; margin-bottom: 48px; font-size: 1rem; }
+  .container { max-width: 1200px; margin: 0 auto; }
+
+  /* Section titles */
+  .section-title { font-size: 1.4rem; font-weight: 800; margin: 48px 0 24px; padding-left: 16px; border-left: 4px solid #F5A623; }
+  .section-title.green { border-color: #00D4AA; }
+  .section-title.pink { border-color: #E91E8C; }
+  .section-title.blue { border-color: #60A5FA; }
+
+  /* Flow diagram */
+  .flow { display: flex; flex-direction: column; gap: 0; align-items: center; margin: 32px 0; }
+  .flow-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: center; }
+  .node { background: #1A1F2E; border: 1.5px solid #2D3348; border-radius: 14px; padding: 18px 22px; min-width: 200px; max-width: 280px; text-align: center; position: relative; transition: all 0.2s; }
+  .node:hover { border-color: #F5A623; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(245,166,35,0.15); }
+  .node .icon { font-size: 1.8rem; margin-bottom: 8px; }
+  .node .title { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
+  .node .desc { font-size: 0.78rem; color: #94A3B8; line-height: 1.5; }
+  .node.stellar { border-color: rgba(0,212,170,0.4); background: linear-gradient(145deg, rgba(0,212,170,0.08), #1A1F2E); }
+  .node.stellar:hover { border-color: #00D4AA; box-shadow: 0 8px 24px rgba(0,212,170,0.15); }
+  .node.contract { border-color: rgba(233,30,140,0.4); background: linear-gradient(145deg, rgba(233,30,140,0.08), #1A1F2E); }
+  .node.contract:hover { border-color: #E91E8C; box-shadow: 0 8px 24px rgba(233,30,140,0.15); }
+  .node.frontend { border-color: rgba(96,165,250,0.4); background: linear-gradient(145deg, rgba(96,165,250,0.08), #1A1F2E); }
+  .node.new { border-color: rgba(245,166,35,0.5); background: linear-gradient(145deg, rgba(245,166,35,0.12), #1A1F2E); }
+  .node.new::after { content: 'NUEVO'; position: absolute; top: -10px; right: 14px; background: linear-gradient(135deg, #F5A623, #E91E8C); color: #0A0E17; font-size: 0.6rem; font-weight: 800; padding: 2px 8px; border-radius: 10px; letter-spacing: 0.05em; }
+
+  .arrow { display: flex; flex-direction: column; align-items: center; color: #4A5568; font-size: 1.2rem; padding: 8px 0; }
+  .arrow span { font-size: 0.7rem; color: #64748B; margin-top: 2px; }
+  .arrow-h { color: #4A5568; font-size: 1.4rem; padding: 0 4px; }
+
+  /* Integration points table */
+  .int-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin: 24px 0; }
+  .int-card { background: #1A1F2E; border: 1px solid #2D3348; border-radius: 14px; padding: 24px; }
+  .int-card .number { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: rgba(245,166,35,0.15); color: #F5A623; font-weight: 900; font-size: 0.9rem; margin-bottom: 12px; }
+  .int-card h3 { font-weight: 700; font-size: 1.05rem; margin-bottom: 8px; }
+  .int-card p { font-size: 0.85rem; color: #94A3B8; line-height: 1.6; margin-bottom: 12px; }
+  .int-card .status { display: inline-flex; align-items: center; gap: 6px; font-size: 0.75rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; }
+  .status.done { background: rgba(0,212,170,0.12); color: #00D4AA; border: 1px solid rgba(0,212,170,0.3); }
+  .status.partial { background: rgba(245,166,35,0.12); color: #F5A623; border: 1px solid rgba(245,166,35,0.3); }
+  .status.todo { background: rgba(233,30,140,0.12); color: #E91E8C; border: 1px solid rgba(233,30,140,0.3); }
+  .int-card .files { margin-top: 12px; font-size: 0.75rem; color: #64748B; }
+  .int-card .files code { background: rgba(96,165,250,0.1); color: #60A5FA; padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; }
+
+  /* Contract box */
+  .contract-box { background: #111827; border: 1px solid #2D3348; border-radius: 14px; padding: 20px; margin: 16px 0; font-family: 'Consolas', monospace; font-size: 0.82rem; line-height: 1.7; color: #94A3B8; overflow-x: auto; }
+  .contract-box .fn { color: #E91E8C; font-weight: 700; }
+  .contract-box .param { color: #F5A623; }
+  .contract-box .comment { color: #4A5568; }
+  .contract-box .ret { color: #00D4AA; }
+
+  /* Legend */
+  .legend { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin: 32px 0 48px; padding: 16px 24px; background: #111827; border-radius: 12px; border: 1px solid #2D3348; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+
+  /* Plan comparison */
+  .plan-table { width: 100%; border-collapse: collapse; margin: 24px 0; }
+  .plan-table th, .plan-table td { padding: 12px 16px; text-align: center; border-bottom: 1px solid #2D3348; font-size: 0.85rem; }
+  .plan-table th { background: #111827; color: #94A3B8; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; }
+  .plan-table td:first-child { text-align: left; font-weight: 600; }
+  .plan-table .yes { color: #00D4AA; font-weight: 700; }
+  .plan-table .no { color: #EF4444; }
+  .plan-table .partial { color: #F5A623; font-weight: 600; }
+
+  @media (max-width: 768px) {
+    .flow-row { flex-direction: column; }
+    .arrow-h { transform: rotate(90deg); }
+    .int-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Tonalli — Arquitectura Blockchain</h1>
+  <p class="subtitle">Mapa completo de integración con Stellar Network & Soroban Smart Contracts</p>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#00D4AA"></div> Stellar / On-chain</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#E91E8C"></div> Smart Contract (Soroban)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#60A5FA"></div> Frontend / Backend</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#F5A623"></div> Punto de integración nuevo</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- FLOW 1: REGISTRO Y WALLET -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <h2 class="section-title green">1. Registro de Usuario → Creación de Wallet</h2>
+
+  <div class="flow">
+    <div class="flow-row">
+      <div class="node frontend">
+        <div class="icon">👤</div>
+        <div class="title">Usuario se registra</div>
+        <div class="desc">Email, username, password, ciudad</div>
+      </div>
+      <span class="arrow-h">→</span>
+      <div class="node">
+        <div class="icon">🔐</div>
+        <div class="title">AuthService.register()</div>
+        <div class="desc">Crea usuario en MySQL, genera JWT</div>
+      </div>
+      <span class="arrow-h">→</span>
+      <div class="node stellar">
+        <div class="icon">⭐</div>
+        <div class="title">StellarService.createKeypair()</div>
+        <div class="desc">Genera par de claves Stellar (publicKey + secretKey)</div>
+      </div>
+    </div>
+
+    <div class="arrow">↓<span>Stellar Testnet</span></div>
+
+    <div class="flow-row">
+      <div class="node stellar">
+        <div class="icon">💰</div>
+        <div class="title">Friendbot Funding</div>
+        <div class="desc">Fondea la cuenta con 10,000 XLM de prueba en testnet</div>
+      </div>
+      <span class="arrow-h">→</span>
+      <div class="node">
+        <div class="icon">✅</div>
+        <div class="title">user.isFunded = true</div>
+        <div class="desc">Se guarda stellarPublicKey y stellarSecretKey en BD</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- FLOW 2: SUSCRIPCIONES ON-CHAIN -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <h2 class="section-title" style="border-color:#F5A623">2. Suscripciones → Pago On-Chain (NUEVO)</h2>
+
+  <div class="flow">
+    <div class="flow-row">
+      <div class="node frontend">
+        <div class="icon">📱</div>
+        <div class="title">PremiumPage</div>
+        <div class="desc">Usuario elige plan: Free / Pro ($3) / Max ($8)</div>
+      </div>
+      <span class="arrow-h">→</span>
+      <div class="node new">
+        <div class="icon">💳</div>
+        <div class="title">Pago en XLM</div>
+        <div class="desc">Convierte USD→XLM y transfiere desde wallet del usuario al pool de Tonalli</div>
+      </div>
+      <span class="arrow-h">→</span>
+      <div class="node contract">
+        <div class="icon">📝</div>
+        <div class="title">subscription-contract</div>
+        <div class="desc">Registra plan + fecha de expiración on-chain (inmutable)</div>
+      </div>
+    </div>
+
+    <div class="arrow">↓<span>Confirmación on-chain</span></div>
+
+    <div class="flow-row">
+      <div class="node">
+        <div class="icon">🔄</div>
+        <div class="title">Backend actualiza plan</div>
+        <div class="desc">user.plan = 'pro' | 'max', guarda txHash como comprobante</div>
+      </div>
+      <span class="arrow-h">→</span>
+      <div class="node stellar">
+        <div class="icon">🧾</div>
+        <div class="title">Recibo en Stellar</div>
+        <div class="desc">Transacción verificable en stellar.expert/explorer</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- FLOW 3: LEARN TO EARN -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <h2 class="section-title pink">3. Aprendizaje → Learn-to-Earn Rewards</h2>
+
+  <div class="flow">
+    <div class="flow-row">
+      <div class="node frontend">
+        <div class="icon">📖</div>
+        <div class="title">Usuario completa módulo</div>
+        <div class="desc">Info → Video → Quiz (aprueba con ≥80%)</div>
+      </div>
+      <span class="arrow-h">→</span>
+      <div class="node">
+        <div class="icon">⚡</div>
+        <div class="title">ChaptersService.submitQuiz()</div>
+        <div class="desc">Califica respuestas, otorga XP, marca módulo completado</div>
+      </div>
+      <span class="arrow-h">→</span>
+      <div class="node contract">
+        <div class="icon">🎰</div>
+        <div class="title">learn-to-earn.reward_user()</div>
+        <div class="desc">Smart contract verifica anti-doble-claim y envía XLM. Bonus +10% si score=100</div>
+      </div>
+    </div>
+
+    <div class="arrow">↓<span>XLM a la wallet del usuario</span></div>
+
+    <div class="flow-row">
+      <div class="node stellar">
+        <div class="icon">💎</div>
+        <div class="title">XLM Transfer</div>
+        <div class="desc">Tokens XLM reales transferidos del pool a la wallet del usuario</div>
+      </div>
+      <span class="arrow-h">→</span>
+      <div class="node">
+        <div class="icon">📊</div>
+        <div class="title">Actualizar progreso</div>
+        <div class="desc">Guardar txHash, xlmReward en BD para historial</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- FLOW 4: CERTIFICADOS NFT -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <h2 class="section-title green">4. Examen Final → Certificado NFT</h2>
+
+  <div class="flow">
+    <div class="flow-row">
+      <div class="node frontend">
+        <div class="icon">🏆</div>
+        <div class="title">Usuario aprueba examen final</div>
+        <div class="desc">Pro: paga $2 USD en XLM | Max: gratis | Free: no accede</div>
+      </div>
+      <span class="arrow-h">→</span>
+      <div class="node contract">
+        <div class="icon">🎨</div>
+        <div class="title">nft-certificate.mint()</div>
+        <div class="desc">Mint NFT on-chain con: score, XP, username, lessonId, metadata_uri</div>
+      </div>
+      <span class="arrow-h">→</span>
+      <div class="node stellar">
+        <div class="icon">🔗</div>
+        <div class="title">NFT en Stellar</div>
+        <div class="desc">Certificado inmutable almacenado en storage del contrato Soroban</div>
+      </div>
+    </div>
+
+    <div class="arrow">↓<span>Verificación pública</span></div>
+
+    <div class="flow-row">
+      <div class="node frontend">
+        <div class="icon">🌐</div>
+        <div class="title">ACTA Verifiable Credential</div>
+        <div class="desc">Se emite VC con actaVcId vinculado al txHash de Stellar</div>
+      </div>
+      <span class="arrow-h">→</span>
+      <div class="node">
+        <div class="icon">✔️</div>
+        <div class="title">Verificación pública</div>
+        <div class="desc">Cualquiera puede verificar en /certificates/verify con el vcId</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- FLOW 5: PODIO SEMANAL -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <h2 class="section-title blue">5. Podio Semanal → Rewards + Podium NFT</h2>
+
+  <div class="flow">
+    <div class="flow-row">
+      <div class="node">
+        <div class="icon">⏰</div>
+        <div class="title">Cron: Domingo 23:59</div>
+        <div class="desc">PodiumService cierra el ranking semanal automáticamente</div>
+      </div>
+      <span class="arrow-h">→</span>
+      <div class="node">
+        <div class="icon">🥇🥈🥉</div>
+        <div class="title">Top 3 usuarios</div>
+        <div class="desc">1ro: $15 USD | 2do: $10 USD | 3ro: $5 USD (solo Pro/Max)</div>
+      </div>
+      <span class="arrow-h">→</span>
+      <div class="node stellar">
+        <div class="icon">💸</div>
+        <div class="title">sendXLMReward()</div>
+        <div class="desc">Convierte USD→XLM y transfiere desde REWARD_POOL a cada ganador</div>
+      </div>
+    </div>
+
+    <div class="arrow">↓<span>Registro permanente</span></div>
+
+    <div class="flow-row">
+      <div class="node contract">
+        <div class="icon">🏅</div>
+        <div class="title">podio-nft.mint_podium_nft()</div>
+        <div class="desc">NFT conmemorativo: semana, rank, XLM ganado, txHash</div>
+      </div>
+      <span class="arrow-h">→</span>
+      <div class="node">
+        <div class="icon">📋</div>
+        <div class="title">PodiumReward entity</div>
+        <div class="desc">Registro en BD: status (paid/pending/retained), txHash, rewardXlm</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- PUNTOS DE INTEGRACIÓN -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <h2 class="section-title" style="border-color:#F5A623">Puntos de Integración — Estado Actual</h2>
+
+  <div class="int-grid">
+    <!-- 1 -->
+    <div class="int-card">
+      <div class="number">1</div>
+      <h3>Wallet al registrarse</h3>
+      <p>Crear par de claves Stellar al momento del registro y fondear con Friendbot en testnet.</p>
+      <span class="status done">✓ Implementado</span>
+      <div class="files">
+        <code>stellar.service.ts</code> → createKeypair(), fundAccount()<br>
+        <code>auth.service.ts</code> → register()
+      </div>
+    </div>
+
+    <!-- 2 -->
+    <div class="int-card">
+      <div class="number">2</div>
+      <h3>Pago de suscripción en XLM</h3>
+      <p>Cuando el usuario cambia a Pro ($3) o Max ($8), cobrar en XLM desde su wallet al pool de Tonalli. Registrar txHash como comprobante.</p>
+      <span class="status todo">Pendiente de implementar</span>
+      <div class="files">
+        <code>users.controller.ts</code> → upgradePlan()<br>
+        <code>stellar.service.ts</code> → sendXLMReward() (reutilizar invertido)<br>
+        Nuevo: <code>subscription.contract</code> (opcional)
+      </div>
+    </div>
+
+    <!-- 3 -->
+    <div class="int-card">
+      <div class="number">3</div>
+      <h3>Learn-to-Earn Rewards</h3>
+      <p>Al completar un quiz/módulo, el smart contract envía XLM al usuario. Anti-doble-claim integrado. Bonus +10% si score perfecto.</p>
+      <span class="status partial">Contrato listo, integración parcial</span>
+      <div class="files">
+        <code>contracts/learn-to-earn/</code><br>
+        <code>soroban.service.ts</code> → rewardUser()<br>
+        <code>chapters.service.ts</code> → submitQuiz()
+      </div>
+    </div>
+
+    <!-- 4 -->
+    <div class="int-card">
+      <div class="number">4</div>
+      <h3>NFT Certificate Mint</h3>
+      <p>Al aprobar el examen final, se mintea un NFT certificado on-chain con todos los datos del logro (score, XP, módulo, etc).</p>
+      <span class="status partial">Contrato listo, integración parcial</span>
+      <div class="files">
+        <code>contracts/nft-certificate/</code><br>
+        <code>soroban.service.ts</code> → mintCertificate()<br>
+        <code>chapters.service.ts</code> → submitQuiz() (final_exam)
+      </div>
+    </div>
+
+    <!-- 5 -->
+    <div class="int-card">
+      <div class="number">5</div>
+      <h3>Pago de certificación Pro ($2 USD)</h3>
+      <p>Usuarios Pro pagan $2 en XLM por cada certificación. Transferir XLM del usuario al pool antes de desbloquear el examen final.</p>
+      <span class="status todo">Pendiente de implementar</span>
+      <div class="files">
+        <code>chapters.service.ts</code> → unlockFinalExam()<br>
+        <code>stellar.service.ts</code> → nuevo método de cobro
+      </div>
+    </div>
+
+    <!-- 6 -->
+    <div class="int-card">
+      <div class="number">6</div>
+      <h3>Podium Weekly Rewards</h3>
+      <p>Cada domingo se distribuyen recompensas XLM a los top 3. El pool es una cuenta Stellar fondeable.</p>
+      <span class="status partial">Lógica lista, falta REWARD_POOL_SECRET</span>
+      <div class="files">
+        <code>podium.service.ts</code> → distributeWeeklyRewards()<br>
+        <code>stellar.service.ts</code> → sendXLMReward()
+      </div>
+    </div>
+
+    <!-- 7 -->
+    <div class="int-card">
+      <div class="number">7</div>
+      <h3>Podium NFT Conmemorativo</h3>
+      <p>Los ganadores del podio reciben un NFT conmemorativo con su rank, semana y reward. Prueba permanente de logro.</p>
+      <span class="status partial">Contrato listo, sin integrar al backend</span>
+      <div class="files">
+        <code>contracts/podio-nft/</code><br>
+        <code>podium.service.ts</code> → falta llamar mint_podium_nft()
+      </div>
+    </div>
+
+    <!-- 8 -->
+    <div class="int-card">
+      <div class="number">8</div>
+      <h3>ACTA Verifiable Credentials</h3>
+      <p>Certificados verificables emitidos con ACTA SDK. Vinculados al txHash de Stellar para doble verificación (blockchain + VC).</p>
+      <span class="status partial">Hook listo, falta API key de ACTA</span>
+      <div class="files">
+        <code>useIssueCertificate.ts</code> (frontend hook)<br>
+        <code>certificates.service.ts</code> (backend storage)<br>
+        <code>.env</code> → VITE_ACTA_API_KEY
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- SMART CONTRACTS REFERENCE -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <h2 class="section-title pink">Smart Contracts — Funciones disponibles</h2>
+
+  <h3 style="color:#E91E8C; margin: 16px 0 8px; font-size: 1rem;">📜 nft-certificate (contracts/nft-certificate/)</h3>
+  <div class="contract-box">
+    <span class="comment">// Inicializar contrato</span><br>
+    <span class="fn">initialize</span>(<span class="param">admin: Address</span>)<br><br>
+    <span class="comment">// Mintear certificado NFT</span><br>
+    <span class="fn">mint</span>(<span class="param">to, lesson_id, module_id, username, score, xp_earned, metadata_uri</span>) → <span class="ret">token_id</span><br><br>
+    <span class="comment">// Consultar certificados</span><br>
+    <span class="fn">get_certificate</span>(<span class="param">token_id</span>) → <span class="ret">CertificateData</span><br>
+    <span class="fn">get_user_certificates</span>(<span class="param">owner</span>) → <span class="ret">Vec&lt;token_id&gt;</span><br>
+    <span class="fn">has_certificate</span>(<span class="param">owner, lesson_id</span>) → <span class="ret">bool</span><br>
+    <span class="fn">total_supply</span>() → <span class="ret">u64</span>
+  </div>
+
+  <h3 style="color:#E91E8C; margin: 16px 0 8px; font-size: 1rem;">💰 learn-to-earn (contracts/learn-to-earn/)</h3>
+  <div class="contract-box">
+    <span class="comment">// Inicializar con token XLM SAC</span><br>
+    <span class="fn">initialize</span>(<span class="param">admin: Address, xlm_token: Address</span>)<br><br>
+    <span class="comment">// Recompensar usuario (anti-doble-claim)</span><br>
+    <span class="fn">reward_user</span>(<span class="param">user, lesson_id, amount, score</span>) → <span class="ret">actual_amount</span><br>
+    <span class="comment">  // Si score == 100 → bonus +10% automático</span><br><br>
+    <span class="comment">// Consultas</span><br>
+    <span class="fn">get_user_total_rewards</span>(<span class="param">user</span>) → <span class="ret">i128</span><br>
+    <span class="fn">get_reward_history</span>(<span class="param">user</span>) → <span class="ret">Vec&lt;RewardRecord&gt;</span><br>
+    <span class="fn">is_lesson_rewarded</span>(<span class="param">user, lesson_id</span>) → <span class="ret">bool</span><br><br>
+    <span class="comment">// Admin: fondear/retirar pool</span><br>
+    <span class="fn">deposit</span>(<span class="param">from, amount</span>)<br>
+    <span class="fn">withdraw</span>(<span class="param">to, amount</span>)
+  </div>
+
+  <h3 style="color:#E91E8C; margin: 16px 0 8px; font-size: 1rem;">🏅 podio-nft (contracts/podio-nft/)</h3>
+  <div class="contract-box">
+    <span class="fn">initialize</span>(<span class="param">admin: Address</span>)<br><br>
+    <span class="comment">// Mintear NFT de podio semanal</span><br>
+    <span class="fn">mint_podium_nft</span>(<span class="param">week, address, rank, xlm_reward, tx_hash</span>)<br>
+    <span class="comment">  // Previene doble-mint por semana+address</span><br><br>
+    <span class="fn">get_podium_nft</span>(<span class="param">week, address</span>) → <span class="ret">PodiumNFT</span><br>
+    <span class="fn">has_nft</span>(<span class="param">week, address</span>) → <span class="ret">bool</span>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- PLAN vs BLOCKCHAIN -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <h2 class="section-title green">Blockchain por Plan de Suscripción</h2>
+
+  <table class="plan-table">
+    <thead>
+      <tr>
+        <th>Funcionalidad Blockchain</th>
+        <th>Free ($0)</th>
+        <th>Pro ($3/mes)</th>
+        <th>Max ($8/mes)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Wallet Stellar creada</td>
+        <td class="yes">✓</td>
+        <td class="yes">✓</td>
+        <td class="yes">✓</td>
+      </tr>
+      <tr>
+        <td>XLM Rewards por quiz</td>
+        <td class="yes">✓ (3 caps)</td>
+        <td class="yes">✓ (todos)</td>
+        <td class="yes">✓ (todos)</td>
+      </tr>
+      <tr>
+        <td>NFT Certificado (examen final)</td>
+        <td class="no">✘</td>
+        <td class="partial">$2 USD c/u</td>
+        <td class="yes">✓ Gratis</td>
+      </tr>
+      <tr>
+        <td>Podio semanal (ganar XLM)</td>
+        <td class="no">✘</td>
+        <td class="yes">✓</td>
+        <td class="yes">✓</td>
+      </tr>
+      <tr>
+        <td>Podium NFT conmemorativo</td>
+        <td class="no">✘</td>
+        <td class="yes">✓</td>
+        <td class="yes">✓</td>
+      </tr>
+      <tr>
+        <td>ACTA Verifiable Credential</td>
+        <td class="no">✘</td>
+        <td class="partial">$2 USD c/u</td>
+        <td class="yes">✓ Gratis</td>
+      </tr>
+      <tr>
+        <td>Pago suscripción on-chain</td>
+        <td>—</td>
+        <td class="partial">$3 en XLM</td>
+        <td class="partial">$8 en XLM</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- EJEMPLO DE INTEGRACIÓN -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <h2 class="section-title" style="border-color:#F5A623">Ejemplo: Integrar pago de suscripción en XLM</h2>
+
+  <p style="color:#94A3B8; margin: 16px 0; line-height: 1.7; font-size: 0.9rem;">
+    Este es el punto de integración más directo. Actualmente <code style="color:#60A5FA">upgradePlan()</code>
+    cambia el plan sin cobrar. Así se conectaría con Stellar:
+  </p>
+
+  <div class="contract-box" style="border: 1px solid rgba(245,166,35,0.3);">
+    <span class="comment">// ── stellar.service.ts — Nuevo método ──</span><br><br>
+    <span class="fn">async chargeSubscription</span>(<span class="param">userSecret: string, amountUsd: number</span>): Promise&lt;{success, txHash}&gt; {<br>
+    &nbsp;&nbsp;<span class="comment">// 1. Obtener precio XLM actual (API o fijo para demo)</span><br>
+    &nbsp;&nbsp;const xlmPrice = 0.15; <span class="comment">// USD por XLM</span><br>
+    &nbsp;&nbsp;const xlmAmount = (amountUsd / xlmPrice).toFixed(2);<br><br>
+    &nbsp;&nbsp;<span class="comment">// 2. Crear transacción: usuario → pool de Tonalli</span><br>
+    &nbsp;&nbsp;const userKeypair = Keypair.fromSecret(userSecret);<br>
+    &nbsp;&nbsp;const account = await server.loadAccount(userKeypair.publicKey());<br>
+    &nbsp;&nbsp;const tx = new TransactionBuilder(account, { fee: '100' })<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;.addOperation(Operation.payment({<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;destination: <span class="param">TONALLI_POOL_PUBLIC_KEY</span>,<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;asset: Asset.native(),<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;amount: xlmAmount,<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;}))<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;.addMemo(Memo.text(<span class="param">`sub:${plan}`</span>))<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;.setTimeout(30).build();<br><br>
+    &nbsp;&nbsp;<span class="comment">// 3. Firmar y enviar</span><br>
+    &nbsp;&nbsp;tx.sign(userKeypair);<br>
+    &nbsp;&nbsp;const result = await server.submitTransaction(tx);<br>
+    &nbsp;&nbsp;return { success: true, txHash: result.hash };<br>
+    }
+  </div>
+
+  <div class="contract-box" style="border: 1px solid rgba(245,166,35,0.3); margin-top: 12px;">
+    <span class="comment">// ── users.service.ts — Modificar upgradePlan() ──</span><br><br>
+    <span class="fn">async upgradePlan</span>(<span class="param">userId: string, plan: 'pro' | 'max'</span>): Promise&lt;User&gt; {<br>
+    &nbsp;&nbsp;const user = await this.findById(userId);<br>
+    &nbsp;&nbsp;const prices = { pro: 3, max: 8 };<br><br>
+    &nbsp;&nbsp;<span class="comment">// Cobrar en XLM si tiene wallet</span><br>
+    &nbsp;&nbsp;if (user.stellarSecretKey) {<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;const result = await this.stellarService.<span class="fn">chargeSubscription</span>(<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;user.stellarSecretKey, prices[plan]<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;);<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;if (!result.success) throw new Error('Pago fallido');<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// Guardar txHash como comprobante</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;user.subscriptionTxHash = result.txHash;<br>
+    &nbsp;&nbsp;}<br><br>
+    &nbsp;&nbsp;user.plan = plan;<br>
+    &nbsp;&nbsp;return this.userRepository.save(user);<br>
+    }
+  </div>
+
+  <!-- Footer -->
+  <div style="text-align: center; margin-top: 64px; padding: 32px 0; border-top: 1px solid #2D3348;">
+    <p style="color: #4A5568; font-size: 0.8rem;">
+      Tonalli — Hackathon 2026 | Stellar Network Testnet | Soroban Smart Contracts
+    </p>
+    <p style="color: #2D3348; font-size: 0.7rem; margin-top: 8px;">
+      3 contratos Soroban (Rust) + StellarService + SorobanService + ACTA SDK
+    </p>
+  </div>
+</div>
+
+</body>
+</html>

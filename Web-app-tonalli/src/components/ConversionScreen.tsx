@@ -38,25 +38,25 @@ export function ConversionScreen({ chapterTitle, onUpgradePremium, onBuyCertific
 
         {/* Upgrade options */}
         <div className="space-y-4">
-          {/* Option A: Premium */}
+          {/* Option A: Max plan */}
           <button
             onClick={onUpgradePremium}
             className="w-full bg-gradient-to-r from-yellow-500 to-yellow-400 text-gray-900 font-bold py-4 px-6 rounded-xl hover:from-yellow-400 hover:to-yellow-300 transition-all shadow-lg shadow-yellow-500/25"
           >
-            <div className="text-lg">{t('premiumUpgradeLabel')}</div>
+            <div className="text-lg">👑 Plan Max — $8 USD/mes</div>
             <div className="text-sm font-normal mt-1 opacity-80">
-              {t('premiumUpgradeDesc')}
+              Todos los capitulos + Certificados gratis + Podio semanal
             </div>
           </button>
 
-          {/* Option B: Certificate only */}
+          {/* Option B: Pro plan */}
           <button
             onClick={onBuyCertificate}
             className="w-full bg-gray-700 text-white font-bold py-4 px-6 rounded-xl hover:bg-gray-600 transition-all border border-gray-600"
           >
-            <div className="text-lg">{t('certOnlyLabel')}</div>
+            <div className="text-lg">🚀 Plan Pro — $3 USD/mes</div>
             <div className="text-sm font-normal mt-1 text-gray-400">
-              {t('certOnlyDesc')}
+              Todos los capitulos + Certificaciones por $2 USD cada una
             </div>
           </button>
 

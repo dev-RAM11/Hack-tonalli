@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tonalli — Documento Tecnico del Sistema</title>
+<style>
+  @page { size: A4; margin: 20mm 18mm; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; color: #1a1a2e; line-height: 1.7; font-size: 11pt; background: #fff; }
+
+  /* Cover page */
+  .cover { page-break-after: always; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; background: linear-gradient(135deg, #0A0E17 0%, #1A1F2E 100%); color: #fff; padding: 60px 40px; }
+  .cover h1 { font-size: 3rem; font-weight: 900; margin-bottom: 12px; background: linear-gradient(135deg, #F5A623, #E91E8C, #00D4AA); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .cover .subtitle { font-size: 1.3rem; color: #94A3B8; margin-bottom: 40px; }
+  .cover .meta { color: #64748B; font-size: 0.9rem; line-height: 2; }
+  .cover .meta strong { color: #E2E8F0; }
+  .cover .logo { font-size: 5rem; margin-bottom: 20px; }
+  .cover .version { margin-top: 40px; background: rgba(245,166,35,0.15); border: 1px solid rgba(245,166,35,0.3); padding: 8px 24px; border-radius: 20px; color: #F5A623; font-weight: 700; font-size: 0.85rem; }
+
+  /* Content */
+  .content { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
+  h2 { font-size: 1.5rem; font-weight: 800; color: #0A0E17; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 3px solid #E91E8C; }
+  h3 { font-size: 1.15rem; font-weight: 700; color: #1a1a2e; margin: 28px 0 10px; }
+  h4 { font-size: 1rem; font-weight: 700; color: #475569; margin: 20px 0 8px; }
+  p { margin-bottom: 12px; text-align: justify; }
+  ul, ol { margin: 8px 0 16px 24px; }
+  li { margin-bottom: 6px; }
+
+  /* Code blocks */
+  pre { background: #0f172a; color: #e2e8f0; padding: 16px 20px; border-radius: 10px; font-size: 0.85rem; line-height: 1.6; overflow-x: auto; margin: 12px 0 20px; font-family: 'Consolas', 'Fira Code', monospace; }
+  code { background: #f1f5f9; color: #e91e8c; padding: 2px 6px; border-radius: 4px; font-size: 0.9em; font-family: 'Consolas', monospace; }
+  pre code { background: none; color: inherit; padding: 0; }
+  .keyword { color: #E91E8C; font-weight: 700; }
+  .string { color: #00D4AA; }
+  .comment { color: #64748B; }
+  .type { color: #F5A623; }
+  .fn { color: #60A5FA; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; font-size: 0.9rem; }
+  th { background: #0f172a; color: #fff; padding: 10px 14px; text-align: left; font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  td { padding: 10px 14px; border-bottom: 1px solid #e2e8f0; }
+  tr:nth-child(even) { background: #f8fafc; }
+
+  /* Diagrams */
+  .diagram { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin: 16px 0 24px; font-family: 'Consolas', monospace; font-size: 0.85rem; line-height: 1.8; white-space: pre-wrap; }
+  .diagram .arrow { color: #E91E8C; font-weight: 700; }
+  .diagram .node { color: #0f172a; font-weight: 700; }
+  .diagram .note { color: #64748B; font-style: italic; }
+
+  /* Badges */
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; }
+  .badge-green { background: #dcfce7; color: #166534; }
+  .badge-pink { background: #fce7f3; color: #9d174d; }
+  .badge-blue { background: #dbeafe; color: #1e40af; }
+  .badge-orange { background: #ffedd5; color: #9a3412; }
+
+  /* Callouts */
+  .callout { border-left: 4px solid #F5A623; background: #fffbeb; padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+  .callout.info { border-color: #60A5FA; background: #eff6ff; }
+  .callout.success { border-color: #00D4AA; background: #ecfdf5; }
+
+  /* Page breaks */
+  .page-break { page-break-before: always; }
+
+  /* TOC */
+  .toc { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px 32px; margin: 24px 0; }
+  .toc h3 { margin-top: 0; color: #0f172a; }
+  .toc ol { counter-reset: toc; list-style: none; padding-left: 0; }
+  .toc li { counter-increment: toc; padding: 6px 0; border-bottom: 1px dotted #cbd5e1; }
+  .toc li::before { content: counter(toc) ". "; font-weight: 700; color: #E91E8C; }
+  .toc a { color: #1e40af; text-decoration: none; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- PORTADA -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="cover">
+  <div class="logo">🌮⛓️</div>
+  <h1>TONALLI</h1>
+  <div class="subtitle">Plataforma Educativa Web3 sobre Stellar Network</div>
+  <p style="color:#94A3B8; max-width:500px; font-size:0.95rem; margin-bottom:40px;">
+    Documento tecnico del sistema: arquitectura, smart contracts,<br>
+    credenciales verificables ACTA, y modelo de suscripciones.
+  </p>
+  <div class="meta">
+    <strong>Hackathon 2026</strong><br>
+    Blockchain: Stellar Network (Testnet)<br>
+    Smart Contracts: Soroban (Rust) + ACTA SDK<br>
+    Stack: NestJS + React + TypeORM + MySQL<br>
+    Fecha: Marzo 2026
+  </div>
+  <div class="version">v2.0 — Free / Pro / Max</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- INDICE -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="content">
+
+<div class="toc">
+  <h3>Indice</h3>
+  <ol>
+    <li><a href="#vision">Vision General del Sistema</a></li>
+    <li><a href="#arquitectura">Arquitectura del Sistema</a></li>
+    <li><a href="#roles">Roles del Sistema (user, admin, designer)</a></li>
+    <li><a href="#cursos">Estructura de Cursos (id_curso, modulos, usuarios)</a></li>
+    <li><a href="#suscripciones">Modelo de Suscripciones (Free / Pro / Max)</a></li>
+    <li><a href="#sc-rewards">Smart Contract: Learn-to-Earn Rewards</a></li>
+    <li><a href="#sc-acta">Smart Contract: Certificaciones ACTA (Verifiable Credentials)</a></li>
+    <li><a href="#flujos">Flujos Principales del Sistema</a></li>
+    <li><a href="#entidades">Modelo de Datos</a></li>
+    <li><a href="#api">Endpoints API</a></li>
+    <li><a href="#despliegue">Configuracion y Despliegue</a></li>
+  </ol>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- 1. VISION GENERAL -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2 id="vision">1. Vision General del Sistema</h2>
+
+<p>
+  <strong>Tonalli</strong> es una plataforma educativa gamificada que ensena Web3 y blockchain
+  a traves de cursos interactivos. Los usuarios aprenden conceptos como blockchain, Stellar,
+  wallets, DeFi y NFTs, y al completar evaluaciones reciben:
+</p>
+
+<ul>
+  <li><strong>XP (puntos de experiencia)</strong> — gamificacion interna</li>
+  <li><strong>XLM (Lumens)</strong> — recompensas reales en criptomoneda via smart contract</li>
+  <li><strong>Certificados verificables</strong> — credenciales W3C emitidas on-chain via ACTA sobre Stellar</li>
+  <li><strong>NFTs conmemorativos</strong> — tokens no fungibles como prueba de logro</li>
+</ul>
+
+<div class="callout success">
+  <strong>Blockchain en Tonalli:</strong> Los smart contracts se utilizan en dos areas especificas:
+  <br>1. <strong>Certificaciones</strong> — ACTA Verifiable Credentials almacenadas en un vault on-chain
+  <br>2. <strong>Rewards</strong> — Distribucion automatica de XLM con anti-doble-claim via contrato Soroban
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- 2. ARQUITECTURA -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2 id="arquitectura" class="page-break">2. Arquitectura del Sistema</h2>
+
+<div class="diagram">
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────────┐
+│   Frontend      │     │    Backend        │     │   Stellar Network   │
+│   React + Vite  │────▶│  NestJS + MySQL   │────▶│   Testnet           │
+│                 │ API │                   │     │                     │
+│ - Dashboard     │     │ - AuthModule      │     │ ┌─────────────────┐ │
+│ - ChapterFlow   │     │ - UsersModule     │     │ │ ACTA Contract   │ │
+│ - PremiumPage   │     │ - ChaptersModule  │     │ │ (Vault + VCs)   │ │
+│ - Certificates  │     │ - CertModule      │     │ └─────────────────┘ │
+│ - Leaderboard   │     │ - ActaModule      │     │ ┌─────────────────┐ │
+│                 │     │ - PodiumModule    │     │ │ Learn-to-Earn   │ │
+│ ACTA SDK (read) │     │ - StellarModule   │     │ │ (Rewards pool)  │ │
+└─────────────────┘     └──────────────────┘     │ └─────────────────┘ │
+                                                  │ ┌─────────────────┐ │
+                                                  │ │ Wallets (XLM)   │ │
+                                                  │ │ Admin + Users   │ │
+                                                  │ └─────────────────┘ │
+                                                  └─────────────────────┘
+</div>
+
+<table>
+  <thead><tr><th>Capa</th><th>Tecnologia</th><th>Funcion</th></tr></thead>
+  <tbody>
+    <tr><td>Frontend</td><td>React 19, Vite, Framer Motion</td><td>UI gamificada, quizzes, certificados</td></tr>
+    <tr><td>Backend</td><td>NestJS 11, TypeORM, MySQL</td><td>API REST, logica de negocio, auth JWT</td></tr>
+    <tr><td>Blockchain</td><td>Stellar SDK, Soroban, ACTA SDK</td><td>Wallets, rewards, certificados on-chain</td></tr>
+    <tr><td>Smart Contracts</td><td>Rust / Soroban</td><td>Learn-to-Earn, NFT Certificate</td></tr>
+    <tr><td>Credenciales</td><td>ACTA SDK + W3C VC Standard</td><td>Verifiable Credentials en vault Stellar</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- 3. ROLES -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2 id="roles">3. Roles del Sistema</h2>
+
+<p>El sistema maneja tres roles con permisos diferenciados:</p>
+
+<table>
+  <thead><tr><th>Rol</th><th>Descripcion</th><th>Permisos</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><span class="badge badge-blue">user</span></td>
+      <td>Estudiante de la plataforma</td>
+      <td>
+        - Tomar cursos y quizzes<br>
+        - Recibir XP y XLM rewards<br>
+        - Obtener certificados (segun plan)<br>
+        - Participar en podio (Pro/Max)<br>
+        - Gestionar wallet Stellar
+      </td>
+    </tr>
+    <tr>
+      <td><span class="badge badge-pink">admin</span></td>
+      <td>Administrador de la plataforma</td>
+      <td>
+        - Crear/editar/eliminar cursos y capitulos<br>
+        - Gestionar preguntas de quizzes<br>
+        - Publicar y programar capitulos<br>
+        - Distribuir recompensas del podio<br>
+        - Emitir certificados ACTA (issuer)
+      </td>
+    </tr>
+    <tr>
+      <td><span class="badge badge-orange">designer</span></td>
+      <td>Disenador de cursos / Verificador</td>
+      <td>
+        - Revisar progreso de estudiantes por curso<br>
+        - Verificar que el usuario completo el curso<br>
+        - Aprobar emision de certificado<br>
+        - Consultar metricas de avance por capitulo<br>
+        - Ver array de usuarios inscritos por curso
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Estructura del rol en la entidad User</h3>
+
+<pre><code><span class="comment">// user.entity.ts</span>
+<span class="keyword">@Column</span>({ default: <span class="string">'user'</span> })
+role: <span class="string">'admin'</span> | <span class="string">'user'</span> | <span class="string">'designer'</span>;
+</code></pre>
+
+<h3>Objeto de control del Designer</h3>
+
+<p>El designer accede a un <strong>object array</strong> que relaciona usuarios con cursos:</p>
+
+<pre><code><span class="comment">// Estructura: CourseEnrollment</span>
+{
+  <span class="string">"id_curso"</span>: <span class="string">"uuid-chapter-001"</span>,
+  <span class="string">"titulo"</span>: <span class="string">"Introduccion al Blockchain"</span>,
+  <span class="string">"usuarios"</span>: [
+    {
+      <span class="string">"userId"</span>: <span class="string">"uuid-user-001"</span>,
+      <span class="string">"username"</span>: <span class="string">"CryptoAzteca"</span>,
+      <span class="string">"plan"</span>: <span class="string">"pro"</span>,
+      <span class="string">"modulosCompletados"</span>: 3,
+      <span class="string">"totalModulos"</span>: 4,
+      <span class="string">"porcentaje"</span>: 75,
+      <span class="string">"examenAprobado"</span>: <span class="keyword">false</span>,
+      <span class="string">"certificadoEmitido"</span>: <span class="keyword">false</span>
+    },
+    {
+      <span class="string">"userId"</span>: <span class="string">"uuid-user-002"</span>,
+      <span class="string">"username"</span>: <span class="string">"MaxUser"</span>,
+      <span class="string">"plan"</span>: <span class="string">"max"</span>,
+      <span class="string">"modulosCompletados"</span>: 4,
+      <span class="string">"totalModulos"</span>: 4,
+      <span class="string">"porcentaje"</span>: 100,
+      <span class="string">"examenAprobado"</span>: <span class="keyword">true</span>,
+      <span class="string">"certificadoEmitido"</span>: <span class="keyword">true</span>
+    }
+  ]
+}
+</code></pre>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- 4. ESTRUCTURA DE CURSOS -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2 id="cursos" class="page-break">4. Estructura de Cursos</h2>
+
+<h3>Jerarquia</h3>
+
+<div class="diagram">
+Curso (Chapter)           <span class="note">← id_curso, titulo, descripcion, orden</span>
+  ├── Modulo 1 (lesson)   <span class="note">← Lectura + Video + Quiz (5 preguntas)</span>
+  ├── Modulo 2 (lesson)   <span class="note">← Lectura + Video + Quiz (5 preguntas)</span>
+  ├── Modulo 3 (lesson)   <span class="note">← Lectura + Video + Quiz (5 preguntas)</span>
+  └── Modulo 4 (final_exam) <span class="note">← Examen Final (20 preguntas, min 80%)</span>
+                              <span class="note">  → Emision de certificado ACTA</span>
+                              <span class="note">  → Reward XLM via smart contract</span>
+</div>
+
+<h3>Entidad Chapter (id_curso)</h3>
+
+<pre><code><span class="keyword">@Entity</span>(<span class="string">'chapters'</span>)
+<span class="keyword">export class</span> <span class="type">Chapter</span> {
+  <span class="keyword">@PrimaryGeneratedColumn</span>(<span class="string">'uuid'</span>)
+  id: <span class="type">string</span>;                    <span class="comment">// ← id_curso</span>
+
+  <span class="keyword">@Column</span>()
+  title: <span class="type">string</span>;                 <span class="comment">// Nombre del curso</span>
+
+  <span class="keyword">@Column</span>({ nullable: true })
+  description: <span class="type">string</span>;
+
+  <span class="keyword">@Column</span>({ nullable: true })
+  moduleTag: <span class="type">string</span>;              <span class="comment">// "blockchain", "stellar", "defi"</span>
+
+  <span class="keyword">@Column</span>({ default: 0 })
+  order: <span class="type">number</span>;                  <span class="comment">// Orden en la lista</span>
+
+  <span class="keyword">@Column</span>({ default: false })
+  published: <span class="type">boolean</span>;
+
+  <span class="keyword">@Column</span>({ default: 0 })
+  xpReward: <span class="type">number</span>;               <span class="comment">// XP total del curso</span>
+
+  <span class="keyword">@OneToMany</span>(() => ChapterModule)
+  modules: <span class="type">ChapterModule</span>[];       <span class="comment">// 4 modulos</span>
+}
+</code></pre>
+
+<h3>Relacion user ↔ id_curso (Object Array)</h3>
+
+<pre><code><span class="comment">// Estructura de datos que maneja el sistema</span>
+<span class="keyword">interface</span> <span class="type">CourseUserProgress</span> {
+  id_curso: <span class="type">string</span>;              <span class="comment">// UUID del Chapter</span>
+  users: <span class="type">Array</span>&lt;{
+    userId: <span class="type">string</span>;
+    id_curso: <span class="type">string</span>;
+    username: <span class="type">string</span>;
+    plan: <span class="string">'free'</span> | <span class="string">'pro'</span> | <span class="string">'max'</span>;
+    modulosCompletados: <span class="type">number</span>;
+    totalModulos: <span class="type">number</span>;
+    porcentaje: <span class="type">number</span>;
+    examenAprobado: <span class="type">boolean</span>;
+    certificadoEmitido: <span class="type">boolean</span>;
+    score: <span class="type">number</span>;
+  }&gt;;
+}
+</code></pre>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- 5. SUSCRIPCIONES -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2 id="suscripciones">5. Modelo de Suscripciones</h2>
+
+<table>
+  <thead><tr><th>Caracteristica</th><th>Free ($0)</th><th>Pro ($3/mes)</th><th>Max ($8/mes)</th></tr></thead>
+  <tbody>
+    <tr><td>Cursos disponibles</td><td>Primeros 3</td><td>Todos</td><td>Todos</td></tr>
+    <tr><td>Intentos por quiz</td><td>2</td><td>Ilimitados</td><td>Ilimitados</td></tr>
+    <tr><td>Certificacion ACTA</td><td>No</td><td>$2 USD c/u</td><td>Gratis</td></tr>
+    <tr><td>Podio semanal (XLM)</td><td>No</td><td>Si</td><td>Si</td></tr>
+    <tr><td>XLM Rewards por quiz</td><td>Si (3 caps)</td><td>Si (todos)</td><td>Si (todos)</td></tr>
+    <tr><td>NFT conmemorativo</td><td>No</td><td>Si</td><td>Si</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- 6. SMART CONTRACT: REWARDS -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2 id="sc-rewards" class="page-break">6. Smart Contract: Learn-to-Earn Rewards</h2>
+
+<div class="callout info">
+  <strong>Ubicacion:</strong> <code>contracts/learn-to-earn/src/lib.rs</code><br>
+  <strong>Lenguaje:</strong> Rust (Soroban SDK v21)<br>
+  <strong>Red:</strong> Stellar Testnet<br>
+  <strong>Proposito:</strong> Distribuir recompensas XLM automaticamente a usuarios que completan cursos
+</div>
+
+<h3>Funcionalidad</h3>
+
+<p>Este contrato maneja un <strong>pool de XLM</strong> del cual se distribuyen recompensas a los usuarios
+que completan modulos y exámenes. Incluye proteccion anti-doble-claim y bonus por score perfecto.</p>
+
+<h3>Estructura de datos on-chain</h3>
+
+<pre><code><span class="keyword">pub struct</span> <span class="type">RewardRecord</span> {
+    <span class="keyword">pub</span> lesson_id: <span class="type">String</span>,     <span class="comment">// id_curso del modulo completado</span>
+    <span class="keyword">pub</span> amount: <span class="type">i128</span>,          <span class="comment">// Cantidad en stroops (1 XLM = 10^7)</span>
+    <span class="keyword">pub</span> timestamp: <span class="type">u64</span>,        <span class="comment">// Fecha de emision</span>
+}
+</code></pre>
+
+<h3>Funciones del contrato</h3>
+
+<table>
+  <thead><tr><th>Funcion</th><th>Parametros</th><th>Descripcion</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>initialize</code></td>
+      <td>admin, xlm_token</td>
+      <td>Inicializa el contrato con la cuenta admin y la direccion del token XLM (SAC)</td>
+    </tr>
+    <tr>
+      <td><code>reward_user</code></td>
+      <td>user, lesson_id, amount, score</td>
+      <td>Envia XLM al usuario. Verifica anti-doble-claim. Si score=100 aplica bonus +10%</td>
+    </tr>
+    <tr>
+      <td><code>is_lesson_rewarded</code></td>
+      <td>user, lesson_id</td>
+      <td>Verifica si el usuario ya recibio reward por ese curso (anti-doble-claim)</td>
+    </tr>
+    <tr>
+      <td><code>get_user_total_rewards</code></td>
+      <td>user</td>
+      <td>Total de XLM ganados por el usuario</td>
+    </tr>
+    <tr>
+      <td><code>get_reward_history</code></td>
+      <td>user</td>
+      <td>Historial completo de rewards: [{lesson_id, amount, timestamp}]</td>
+    </tr>
+    <tr>
+      <td><code>deposit</code></td>
+      <td>from, amount</td>
+      <td>Fondea el pool de recompensas</td>
+    </tr>
+    <tr>
+      <td><code>withdraw</code></td>
+      <td>to, amount</td>
+      <td>Retiro de emergencia (solo admin)</td>
+    </tr>
+    <tr>
+      <td><code>pool_balance</code></td>
+      <td>—</td>
+      <td>Balance disponible en el pool</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Flujo de reward</h3>
+
+<div class="diagram">
+Usuario completa quiz con score >= 80%
+        │
+        ▼
+Backend: ChaptersService.submitQuiz()
+        │
+        ├── Calcula XP ganado
+        ├── Verifica anti-doble-claim: is_lesson_rewarded(user, id_curso)
+        │
+        ▼
+Smart Contract: reward_user(user, id_curso, amount, score)
+        │
+        ├── Si score == 100 → amount * 1.10 (bonus +10%)
+        ├── Transfiere XLM: pool → wallet del usuario
+        ├── Registra RewardRecord on-chain
+        └── Emite evento para auditoria
+        │
+        ▼
+Backend guarda txHash en base de datos
+</div>
+
+<h3>Seguridad</h3>
+
+<ul>
+  <li><strong>Anti-doble-claim:</strong> El contrato verifica <code>is_lesson_rewarded(user, lesson_id)</code> antes de pagar. Si el usuario ya recibio reward por ese <code>id_curso</code>, la transaccion se rechaza.</li>
+  <li><strong>Solo admin:</strong> Unicamente la cuenta admin puede invocar <code>reward_user</code>, <code>withdraw</code>.</li>
+  <li><strong>Pool finito:</strong> Los rewards solo se pagan si hay balance suficiente en el pool.</li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- 7. SMART CONTRACT: ACTA CERTIFICACIONES -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2 id="sc-acta" class="page-break">7. Smart Contract: Certificaciones ACTA</h2>
+
+<div class="callout info">
+  <strong> 'Proveedor:</strong> ACTA (acta.build)<br>
+  <strong>Contrato:</strong> <code>CCOTIN3C6THFBEBYG6CJBOYEUPMPH5BHATWMCXPT52M6T7YZURJAC64O</code><br>
+  <strong>Estandar:</strong> W3C Verifiable Credentials v2<br>
+  <strong>Red:</strong> Stellar Testnet<br>
+  <strong>Proposito:</strong> Emitir certificados verificables inmutables para graduados de cursos
+</div>
+
+<h3>Arquitectura de ACTA</h3>
+
+<p>ACTA utiliza un modelo de <strong>Vault</strong> (boveda) en el contrato inteligente de Stellar donde
+se almacenan las credenciales verificables. El flujo requiere:</p>
+
+<ol>
+  <li><strong>Vault:</strong> Almacen on-chain donde se guardan las credenciales del emisor (Tonalli)</li>
+  <li><strong>Wallet:</strong> Cuenta Stellar del admin para firmar transacciones y acceder al vault</li>
+  <li><strong>Issuer:</strong> Entidad autorizada para emitir credenciales dentro del vault</li>
+</ol>
+
+<h3>Estructura de la Credencial Verificable</h3>
+
+<pre><code>{
+  <span class="string">"owner"</span>: <span class="string">"GD7TV4RC..."</span>,                    <span class="comment">// Wallet admin (vault owner)</span>
+  <span class="string">"vcId"</span>: <span class="string">"vc:tonalli:ch:uuid:timestamp"</span>,    <span class="comment">// ID unico de credencial</span>
+  <span class="string">"issuer"</span>: <span class="string">"GD7TV4RC..."</span>,                   <span class="comment">// Wallet del issuer (Tonalli)</span>
+  <span class="string">"issuerDid"</span>: <span class="string">"did:pkh:stellar:testnet:GD7TV4RC..."</span>,
+  <span class="string">"sourcePublicKey"</span>: <span class="string">"GD7TV4RC..."</span>,
+  <span class="string">"contractId"</span>: <span class="string">"CCOTIN3C6..."</span>,             <span class="comment">// Contrato ACTA en Stellar</span>
+  <span class="string">"holder"</span>: <span class="string">"did:pkh:stellar:testnet:GUSER..."</span>, <span class="comment">// DID del estudiante</span>
+  <span class="string">"vcData"</span>: {
+    <span class="string">"@context"</span>: [
+      <span class="string">"https://www.w3.org/ns/credentials/v2"</span>,
+      <span class="string">"https://www.w3.org/ns/credentials/examples/v2"</span>
+    ],
+    <span class="string">"type"</span>: [<span class="string">"VerifiableCredential"</span>, <span class="string">"TonalliCourseCompletion"</span>],
+    <span class="string">"credentialSubject"</span>: {
+      <span class="string">"id"</span>: <span class="string">"did:pkh:stellar:testnet:GUSER..."</span>,
+      <span class="string">"name"</span>: <span class="string">"CryptoAzteca"</span>,
+      <span class="string">"achievement"</span>: {
+        <span class="string">"type"</span>: <span class="string">"CourseCompletion"</span>,
+        <span class="string">"course"</span>: <span class="string">"Introduccion al Blockchain"</span>,  <span class="comment">// id_curso title</span>
+        <span class="string">"score"</span>: 92,
+        <span class="string">"platform"</span>: <span class="string">"Tonalli"</span>,
+        <span class="string">"issuedAt"</span>: <span class="string">"2026-03-21T17:42:33.000Z"</span>
+      }
+    }
+  }
+}
+</code></pre>
+
+<h3>Operaciones del Vault ACTA</h3>
+
+<table>
+  <thead><tr><th>Operacion</th><th>Endpoint API</th><th>Descripcion</th></tr></thead>
+  <tbody>
+    <tr><td>Crear Vault</td><td><code>POST /contracts/vault/create</code></td><td>Inicializa el vault para el admin (una sola vez)</td></tr>
+    <tr><td>Autorizar Issuer</td><td><code>POST /contracts/vault/authorize-issuer</code></td><td>Autoriza al admin como emisor de credenciales</td></tr>
+    <tr><td>Emitir Credencial</td><td><code>POST /contracts/vc/issue</code></td><td>Emite VC y la almacena en el vault</td></tr>
+    <tr><td>Verificar Credencial</td><td><code>POST /contracts/vault/verify-vc</code></td><td>Consulta status on-chain: "valid" | "revoked"</td></tr>
+    <tr><td>Listar Credenciales</td><td><code>POST /contracts/vault/list-vc-ids</code></td><td>Lista todos los vcId del vault</td></tr>
+    <tr><td>Obtener Credencial</td><td><code>POST /contracts/vault/get-vc</code></td><td>Obtiene datos completos de una VC</td></tr>
+    <tr><td>Revocar Credencial</td><td><code>POST /contracts/vc/revoke</code></td><td>Revoca una credencial (la invalida)</td></tr>
+  </tbody>
+</table>
+
+<h3>Flujo de emision de certificado</h3>
+
+<div class="diagram">
+Usuario aprueba Examen Final (score >= 80%)
+        │
+        ▼
+Frontend: ChapterQuiz → useIssueCertificate()
+        │
+        ▼
+Backend: POST /api/certificates/issue
+        │
+        ├── CertificatesService.issueActaCertificate()
+        │       │
+        │       ▼
+        │   ActaService.issueCredential(userId, id_curso, titulo, score)
+        │       │
+        │       ├── 1. Genera vcId: "vc:tonalli:ch:{id_curso}:{timestamp}"
+        │       ├── 2. Construye vcData (W3C VC standard)
+        │       ├── 3. Llama ACTA API: POST /contracts/vc/issue (prepare)
+        │       │,(obtiene XDR sin firmar)
+        │       ├── 4. Firma XDR con STELLAR_ADMIN_SECRET
+        │       ├── 5. Submit XDR firmado → txId en Stellar
+        │       └── 6. Retorna { txId, vcId }
+        │
+        ▼
+Guarda en BD: ActaCertificate { actaVcId, txHash, examScore, status }
+        │
+        ▼
+Frontend muestra certificado con link a Stellar Explorer
+</div>
+
+<h3>Firma de transacciones (signXdr)</h3>
+
+<pre><code><span class="comment">// acta.service.ts — Metodo de firma</span>
+<span class="keyword">private</span> <span class="fn">signXdr</span>(unsignedXdr: <span class="type">string</span>, networkPassphrase: <span class="type">string</span>): <span class="type">string</span> {
+  <span class="keyword">const</span> tx = TransactionBuilder.<span class="fn">fromXDR</span>(unsignedXdr, networkPassphrase);
+  tx.<span class="fn">sign</span>(<span class="keyword">this</span>.adminKeypair);
+  <span class="keyword">return</span> tx.<span class="fn">toXDR</span>();
+}
+</code></pre>
+
+<div class="callout">
+  <strong>Patron Prepare → Sign → Submit:</strong> ACTA usa un patron de dos fases.
+  Primero se prepara la transaccion (se obtiene un XDR sin firmar), luego el backend
+  la firma con la clave secreta del admin, y finalmente se envia la transaccion firmada.
+  Esto mantiene las claves secretas siempre en el servidor.
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- 8. FLUJOS PRINCIPALES -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2 id="flujos" class="page-break">8. Flujos Principales</h2>
+
+<h3>8.1 Registro de usuario</h3>
+<div class="diagram">
+1. Usuario → POST /auth/register (email, password, username, city)
+2. Backend → Crea cuenta en MySQL con role='user', plan='free'
+3. StellarService → Genera Keypair (publicKey + secretKey)
+4. Friendbot → Fondea cuenta con 10,000 XLM (testnet)
+5. Backend → Guarda stellarPublicKey, stellarSecretKey, isFunded=true
+6. Retorna → JWT token + datos de usuario
+</div>
+
+<h3>8.2 Completar un curso</h3>
+<div class="diagram">
+1. Usuario accede al curso (id_curso)
+2. Completa Modulo 1: Lectura → Video → Quiz (5 preguntas)
+3. Completa Modulo 2: Lectura → Video → Quiz (5 preguntas)
+4. Completa Modulo 3: Lectura → Video → Quiz (5 preguntas)
+   └── Progreso: 75% — Free users se detienen aqui
+5. Modulo 4 (Examen Final): 20 preguntas, min 80%
+   ├── Pro: paga $2 USD en XLM para acceder
+   └── Max: acceso gratuito
+6. Si aprueba:
+   ├── +50 XP
+   ├── Smart Contract: reward_user() → XLM a wallet
+   ├── ACTA: issueCredential() → certificado on-chain
+   └── Designer puede verificar completitud
+</div>
+
+<h3>8.3 Rol Designer: verificar completitud</h3>
+<div class="diagram">
+1. Designer accede al panel de cursos
+2. Selecciona un curso (id_curso)
+3. Ve el object array de usuarios inscritos:
+   [
+     { userId, username, plan, modulosCompletados, porcentaje,
+       examenAprobado, certificadoEmitido }
+   ]
+4. Filtra por usuarios que completaron al 100%
+5. Verifica que el certificado ACTA fue emitido on-chain
+6. Puede consultar status: GET /certificates/verify?vcId=...
+   → Retorna { valid: true, onChainStatus: "valid" }
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- 9. MODELO DE DATOS -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2 id="entidades" class="page-break">9. Modelo de Datos</h2>
+
+<h3>Entidades principales</h3>
+
+<table>
+  <thead><tr><th>Entidad</th><th>Tabla</th><th>Campos clave</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>User</strong></td>
+      <td>users</td>
+      <td>id, email, username, role (<strong>user|admin|designer</strong>), plan (free|pro|max), stellarPublicKey, stellarSecretKey, xp, totalXp</td>
+    </tr>
+    <tr>
+      <td><strong>Chapter</strong></td>
+      <td>chapters</td>
+      <td>id (<strong>id_curso</strong>), title, description, moduleTag, order, published, xpReward</td>
+    </tr>
+    <tr>
+      <td><strong>ChapterModule</strong></td>
+      <td>chapter_modules</td>
+      <td>id, chapterId (FK→Chapter), type (lesson|final_exam), order, title, passingScore</td>
+    </tr>
+    <tr>
+      <td><strong>ChapterProgress</strong></td>
+      <td>chapter_progress</td>
+      <td>id, userId (FK→User), chapterId (FK→Chapter), moduleId, completed, score, quizAttempts</td>
+    </tr>
+    <tr>
+      <td><strong>ActaCertificate</strong></td>
+      <td>acta_certificates</td>
+      <td>id, userId, chapterId (<strong>id_curso</strong>), actaVcId, txHash, examScore, status, type</td>
+    </tr>
+    <tr>
+      <td><strong>WeeklyScore</strong></td>
+      <td>weekly_scores</td>
+      <td>id, userId, week, totalScore, chaptersCompleted, avgExamScore, activeDays</td>
+    </tr>
+    <tr>
+      <td><strong>PodiumReward</strong></td>
+      <td>podium_rewards</td>
+      <td>id, userId, week, position, rewardUsd, rewardXlm, txHash, status</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Relacion User ↔ Chapter (object array)</h3>
+
+<div class="diagram">
+User (1) ──────── (*) ChapterProgress ──────── (1) Chapter
+  │                     │                            │
+  │ id                  │ userId                     │ id (id_curso)
+  │ username            │ chapterId (id_curso)       │ title
+  │ role                │ moduleId                   │ modules[]
+  │ plan                │ completed                  │
+  │ stellarPublicKey    │ score                      │
+  │                     │ quizAttempts               │
+  │                     │                            │
+  └── ActaCertificate ──┘                            │
+        │ actaVcId                                   │
+        │ txHash                                     │
+        │ examScore                                  │
+        └── chapterId (id_curso) ────────────────────┘
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- 10. ENDPOINTS API -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2 id="api" class="page-break">10. Endpoints API</h2>
+
+<h3>Autenticacion</h3>
+<table>
+  <thead><tr><th>Metodo</th><th>Ruta</th><th>Descripcion</th></tr></thead>
+  <tbody>
+    <tr><td>POST</td><td>/auth/register</td><td>Registro (crea wallet Stellar)</td></tr>
+    <tr><td>POST</td><td>/auth/login</td><td>Login → JWT token</td></tr>
+  </tbody>
+</table>
+
+<h3>Usuarios</h3>
+<table>
+  <thead><tr><th>Metodo</th><th>Ruta</th><th>Descripcion</th><th>Roles</th></tr></thead>
+  <tbody>
+    <tr><td>GET</td><td>/users/me</td><td>Perfil del usuario</td><td>todos</td></tr>
+    <tr><td>PATCH</td><td>/users/me/upgrade</td><td>Cambiar plan {plan: 'pro'|'max'}</td><td>todos</td></tr>
+    <tr><td>GET</td><td>/users/me/wallet/balance</td><td>Balance XLM de la wallet</td><td>todos</td></tr>
+  </tbody>
+</table>
+
+<h3>Cursos (Chapters)</h3>
+<table>
+  <thead><tr><th>Metodo</th><th>Ruta</th><th>Descripcion</th><th>Roles</th></tr></thead>
+  <tbody>
+    <tr><td>GET</td><td>/chapters</td><td>Listar cursos (filtrado por plan)</td><td>user, designer</td></tr>
+    <tr><td>GET</td><td>/chapters/:id_curso/progress</td><td>Curso con progreso del usuario</td><td>user</td></tr>
+    <tr><td>POST</td><td>/chapters/modules/:id/quiz/submit</td><td>Enviar respuestas del quiz</td><td>user</td></tr>
+    <tr><td>POST</td><td>/chapters/:id_curso/unlock-exam</td><td>Desbloquear examen final (Pro: $2)</td><td>user</td></tr>
+    <tr><td>POST</td><td>/chapters</td><td>Crear curso</td><td>admin</td></tr>
+    <tr><td>PATCH</td><td>/chapters/:id_curso</td><td>Editar curso</td><td>admin</td></tr>
+    <tr><td>DELETE</td><td>/chapters/:id_curso</td><td>Eliminar curso</td><td>admin</td></tr>
+  </tbody>
+</table>
+
+<h3>Certificados (ACTA)</h3>
+<table>
+  <thead><tr><th>Metodo</th><th>Ruta</th><th>Descripcion</th><th>Roles</th></tr></thead>
+  <tbody>
+    <tr><td>POST</td><td>/certificates/issue</td><td>Emitir credencial ACTA on-chain</td><td>user (Pro/Max)</td></tr>
+    <tr><td>GET</td><td>/certificates</td><td>Mis certificados</td><td>user</td></tr>
+    <tr><td>GET</td><td>/certificates/verify?vcId=</td><td>Verificacion publica on-chain</td><td>publico</td></tr>
+  </tbody>
+</table>
+
+<h3>Podio</h3>
+<table>
+  <thead><tr><th>Metodo</th><th>Ruta</th><th>Descripcion</th><th>Roles</th></tr></thead>
+  <tbody>
+    <tr><td>GET</td><td>/podium/global</td><td>Ranking global (XP)</td><td>todos</td></tr>
+    <tr><td>GET</td><td>/podium/weekly</td><td>Podio semanal (solo Pro/Max)</td><td>Pro/Max</td></tr>
+    <tr><td>POST</td><td>/podium/distribute</td><td>Distribuir rewards semanales</td><td>admin</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- 11. CONFIGURACION -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<h2 id="despliegue" class="page-break">11. Configuracion y Despliegue</h2>
+
+<h3>Variables de entorno (.env)</h3>
+
+<table>
+  <thead><tr><th>Variable</th><th>Descripcion</th><th>Requerida</th></tr></thead>
+  <tbody>
+    <tr><td><code>STELLAR_ADMIN_SECRET</code></td><td>Secret key de la cuenta admin Stellar</td><td>Si</td></tr>
+    <tr><td><code>ACTA_API_KEY</code></td><td>API key de ACTA para emitir credenciales</td><td>Si</td></tr>
+    <tr><td><code>ACTA_BASE_URL</code></td><td>URL del API ACTA (testnet/mainnet)</td><td>Si</td></tr>
+    <tr><td><code>JWT_SECRET</code></td><td>Secret para firmar JWT tokens</td><td>Si</td></tr>
+    <tr><td><code>DB_HOST, DB_USER, DB_PASS</code></td><td>Conexion MySQL</td><td>Si</td></tr>
+    <tr><td><code>REWARD_POOL_SECRET</code></td><td>Secret key del pool de recompensas</td><td>Opcional</td></tr>
+    <tr><td><code>NFT_CONTRACT_ID</code></td><td>ID del contrato NFT Certificate (Soroban)</td><td>Opcional</td></tr>
+    <tr><td><code>REWARDS_CONTRACT_ID</code></td><td>ID del contrato Learn-to-Earn (Soroban)</td><td>Opcional</td></tr>
+  </tbody>
+</table>
+
+<h3>Cuentas de prueba</h3>
+
+<table>
+  <thead><tr><th>Plan</th><th>Email</th><th>Password</th><th>Rol</th></tr></thead>
+  <tbody>
+    <tr><td>Free</td><td>demo@tonalli.mx</td><td>Demo2024!</td><td>user</td></tr>
+    <tr><td>Pro</td><td>pro@tonalli.mx</td><td>Pro2024!</td><td>user</td></tr>
+    <tr><td>Max</td><td>max@tonalli.mx</td><td>Max2024!</td><td>user</td></tr>
+    <tr><td>Max</td><td>admin@tonalli.mx</td><td>Admin2024!</td><td>admin</td></tr>
+  </tbody>
+</table>
+
+<h3>Inicializacion automatica ACTA</h3>
+
+<p>Al arrancar el backend con <code>ACTA_API_KEY</code> y <code>STELLAR_ADMIN_SECRET</code> configurados,
+el sistema automaticamente:</p>
+
+<ol>
+  <li>Conecta con ACTA API testnet</li>
+  <li>Obtiene <code>actaContractId</code> y <code>networkPassphrase</code></li>
+  <li>Crea el vault para el admin (si no existe)</li>
+  <li>Autoriza al admin como issuer (si no esta autorizado)</li>
+  <li>Queda listo para emitir credenciales</li>
+</ol>
+
+<pre><code><span class="comment">// Logs de inicio exitoso:</span>
+[ActaService] [ACTA] Connected to CCOTIN3C6... on Test SDF Network
+[ActaService] [ACTA] Vault already exists — skipping creation
+[ActaService] [ACTA] Issuer already authorized — skipping
+[NestApplication] Nest application successfully started
+Tonalli Backend running on http://localhost:3001/api
+</code></pre>
+
+<!-- Footer -->
+<div style="margin-top: 60px; padding-top: 24px; border-top: 2px solid #e2e8f0; text-align: center; color: #94A3B8; font-size: 0.85rem;">
+  <p><strong>Tonalli</strong> — Plataforma Educativa Web3 sobre Stellar Network</p>
+  <p>Hackathon 2026 | Smart Contracts: Soroban (Rust) + ACTA Verifiable Credentials</p>
+  <p>Documento generado: Marzo 2026</p>
+</div>
+
+</div>
+</body>
+</html>

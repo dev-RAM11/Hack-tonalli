@@ -13,7 +13,7 @@ export const mockUser: User = {
   lessonsCompleted: 14,
   city: 'Ciudad de México',
   role: 'user',
-  isPremium: false,
+  plan: 'free' as const,
   walletAddress: 'GDEMO...XLM1',
   nftCertificates: [
     {

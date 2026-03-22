@@ -95,7 +95,7 @@ export function ChapterFlow() {
     await loadChapter();
     const updated = await apiService.getChapterWithProgress(chapterId!);
     setChapter(updated);
-    if (updated.completionPercent === 75 && !user?.isPremium) { setShowConversion(true); }
+    if (updated.completionPercent === 75 && user?.plan === 'free') { setShowConversion(true); }
     else { setView({ step: 'overview' }); }
   };
 
@@ -131,9 +131,9 @@ export function ChapterFlow() {
           <Lock size={48} color="var(--text-muted)" style={{ margin: '0 auto 16px' }} />
           <h2 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: 8 }}>{t('chapterLocked')}</h2>
           <p style={{ color: 'var(--text-muted)', marginBottom: 16 }}>{chapter.lockedReason}</p>
-          {!chapter.isPremium && (
+          {chapter.plan === 'free' && (
             <div className="card" style={{ padding: 16, marginBottom: 16, border: '1px solid rgba(201,146,10,0.3)', background: 'rgba(201,146,10,0.06)' }}>
-              <p style={{ color: 'var(--accent)', fontWeight: 700, fontSize: '0.9rem' }}>Los usuarios Premium acceden a 2 capitulos por semana</p>
+              <p style={{ color: 'var(--accent)', fontWeight: 700, fontSize: '0.9rem' }}>Mejora a Pro o Max para desbloquear todos los capitulos</p>
             </div>
           )}
           <button className="btn btn-secondary" onClick={() => navigate('/chapters')}>&larr; Volver</button>
@@ -229,12 +229,12 @@ export function ChapterFlow() {
 
           {/* Quiz */}
           {view.step === 'quiz' && mod && (
-            <ChapterQuiz moduleId={mod.id} type="quiz" lives={mod.livesRemaining} lockedUntil={mod.lockedUntil} completed={!!mod.sections?.quiz.completed} bestScore={mod.sections?.quiz.score || 0} isPremium={chapter.isPremium} chapterId={chapter.id} chapterTitle={chapter.title} onComplete={handleQuizComplete} />
+            <ChapterQuiz moduleId={mod.id} type="quiz" lives={mod.livesRemaining} lockedUntil={mod.lockedUntil} completed={!!mod.sections?.quiz.completed} bestScore={mod.sections?.quiz.score || 0} plan={chapter.plan} chapterId={chapter.id} chapterTitle={chapter.title} onComplete={handleQuizComplete} />
           )}
 
           {/* Final exam */}
           {view.step === 'final_exam' && mod && (
-            <ChapterQuiz moduleId={mod.id} type="final_exam" lives={mod.livesRemaining} lockedUntil={mod.lockedUntil} completed={mod.completed} bestScore={mod.score} isPremium={chapter.isPremium} chapterId={chapter.id} chapterTitle={chapter.title} onComplete={handleQuizComplete} />
+            <ChapterQuiz moduleId={mod.id} type="final_exam" lives={mod.livesRemaining} lockedUntil={mod.lockedUntil} completed={mod.completed} bestScore={mod.score} plan={chapter.plan} chapterId={chapter.id} chapterTitle={chapter.title} onComplete={handleQuizComplete} />
           )}
         </div>
       </div>
@@ -305,7 +305,7 @@ export function ChapterFlow() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span style={{ fontSize: '0.8rem' }}>📦</span>
                     <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                      {chapter.isPremium ? `${totalMods} módulos` : `3 módulos (free)`}
+                      {chapter.plan !== 'free' ? `${totalMods} módulos` : `3 módulos (free)`}
                     </span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -521,7 +521,7 @@ export function ChapterFlow() {
                     {/* Locked exam — free user */}
                     {isExam && isLocked && (
                       <p style={{ fontSize: '0.78rem', color: 'var(--text-subtle)', margin: '6px 0 0', lineHeight: 1.5 }}>
-                        Requiere suscripción Premium o pago del certificado ($10 USD)
+                        Requiere plan Pro ($2 USD por certificado) o Max (certificados gratis)
                       </p>
                     )}
                   </button>

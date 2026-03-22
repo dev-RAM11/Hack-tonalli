@@ -31,7 +31,7 @@ export class User {
   city: string;
 
   @Column({ default: 'user' })
-  role: 'admin' | 'user';
+  role: 'admin' | 'user' | 'designer';
 
   @Column({ nullable: true })
   stellarPublicKey: string;
@@ -54,11 +54,14 @@ export class User {
   @Column({ default: false })
   isFunded: boolean;
 
-  @Column({ default: false })
-  isPremium: boolean;
-
   @Column({ nullable: true })
-  subscriptionExpiry: Date;
+  externalWalletAddress: string;
+
+  @Column({ default: 'custodial' })
+  walletType: 'custodial' | 'external' | 'hybrid';
+
+  @Column({ default: 'free' })
+  plan: 'free' | 'pro' | 'max';
 
   @Column({ nullable: true })
   dateOfBirth: string;

@@ -7,6 +7,7 @@ import { useProgressStore } from '../stores/progressStore';
 import { apiService } from '../services/api';
 import type { LeaderboardEntry } from '../types';
 import { useT } from '../hooks/useT';
+import { WalletPanel } from '../components/WalletPanel';
 
 
 
@@ -30,6 +31,8 @@ export function Dashboard() {
           level: Math.floor((profile.totalXp || profile.xp || 0) / 500) + 1,
           streak: (profile as any).currentStreak || profile.streak || 0,
           walletAddress: profile.walletAddress || '',
+          externalWalletAddress: profile.externalWalletAddress || null,
+          walletType: profile.walletType || 'custodial',
         });
       }
     }).catch(() => {});
@@ -169,7 +172,7 @@ export function Dashboard() {
             <h2 style={{ fontSize: '1.4rem', fontWeight: 900, marginBottom: 8, textAlign: 'center' }}>{t('learningPath')}</h2>
             <p style={{ color: 'var(--text-muted)', textAlign: 'center', marginBottom: 24, fontSize: '0.9rem' }}>
               {chapters.filter((c: any) => c.accessible).length} {t('chaptersAvailableOf')} {chapters.length} {t('chaptersAvailableCount')}
-              {!user?.isPremium && <span style={{ color: '#f59e0b' }}> · {t('freePlanLimit')}</span>}
+              {user?.plan === 'free' && <span style={{ color: '#f59e0b' }}> · {t('freePlanLimit')}</span>}
             </p>
 
             {chapters.length === 0 && (
@@ -275,32 +278,18 @@ export function Dashboard() {
               </div>
             </motion.div>
 
-            {/* Wallet card */}
+            {/* Wallet panel */}
             {user.walletAddress && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="card"
-              >
-                <div style={{ fontWeight: 900, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {t('stellarWallet')}
-                </div>
-                <div style={{
-                  background: 'var(--background)',
-                  borderRadius: 8,
-                  padding: '10px 12px',
-                  fontSize: '0.7rem',
-                  fontFamily: 'monospace',
-                  color: 'var(--text-muted)',
-                  wordBreak: 'break-all',
-                }}>
-                  {user.walletAddress}
-                </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 6 }}>
-                  {t('stellarNetwork')}
-                </div>
-              </motion.div>
+              <WalletPanel
+                walletAddress={user.walletAddress}
+                externalWalletAddress={user.externalWalletAddress}
+                walletType={user.walletType}
+                onWalletUpdate={() => {
+                  apiService.getProfile().then((profile) => {
+                    setUser({ ...user, ...profile });
+                  }).catch(() => {});
+                }}
+              />
             )}
 
             {/* Leaderboard mini */}

@@ -9,9 +9,11 @@ export interface User {
   xlmEarned: number;
   lessonsCompleted: number;
   city: string;
-  role: 'admin' | 'user';
-  isPremium: boolean;
+  role: 'admin' | 'user' | 'designer';
+  plan: 'free' | 'pro' | 'max';
   walletAddress?: string;
+  externalWalletAddress?: string | null;
+  walletType?: 'custodial' | 'external' | 'hybrid';
   avatarUrl?: string;
   character?: string;
   nftCertificates: NFTCertificate[];
@@ -74,7 +76,7 @@ export interface ChapterWithProgress {
   releaseWeek?: string;
   modules: ChapterModuleData[];
   completionPercent: number;
-  isPremium: boolean;
+  plan: 'free' | 'pro' | 'max';
   accessible?: boolean;
   lockedReason?: string | null;
 }
@@ -153,7 +155,7 @@ export interface LeaderboardEntry {
   level?: number;
   streak: number;
   character?: string;
-  isPremium?: boolean;
+  plan?: 'free' | 'pro' | 'max';
   isCurrentUser?: boolean;
 }
 
@@ -166,6 +168,14 @@ export interface WeeklyLeaderboard {
     avgExamScore: number;
     activeDays: number;
   }>;
+}
+
+export interface WalletBalance {
+  custodialAddress: string | null;
+  externalAddress: string | null;
+  walletType: string;
+  xlmBalance: string;
+  tnlBalance: number;
 }
 
 export interface AuthState {

@@ -1,10 +1,24 @@
-import { Controller, Get, Patch, Body, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Body,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
+import { StellarService } from '../stellar/stellar.service';
+import { SorobanService } from '../stellar/soroban.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller()
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly stellarService: StellarService,
+    private readonly sorobanService: SorobanService,
+  ) {}
 
   @Get('users/me')
   @UseGuards(JwtAuthGuard)
@@ -28,17 +42,113 @@ export class UsersController {
     @Req() req,
     @Body() body: { companion: string; avatarType: string },
   ) {
-    return this.usersService.setupUser(req.user.id, body.companion, body.avatarType);
+    return this.usersService.setupUser(
+      req.user.id,
+      body.companion,
+      body.avatarType,
+    );
   }
 
   @Patch('users/me/upgrade')
   @UseGuards(JwtAuthGuard)
-  async upgradeToPremium(@Req() req) {
-    return this.usersService.upgradeToPremium(req.user.id);
+  async upgradePlan(
+    @Req() req,
+    @Body() body: { plan: 'free' | 'pro' | 'max' },
+  ) {
+    const plan = body.plan || 'pro';
+    return this.usersService.upgradePlan(req.user.id, plan);
   }
 
   @Get('rankings')
   async getRankings() {
     return this.usersService.getRankings();
+  }
+
+  // ── Wallet Endpoints ────────────────────────────────────────────────────
+
+  @Get('users/me/wallet/balance')
+  @UseGuards(JwtAuthGuard)
+  async getWalletBalance(@Req() req) {
+    const user = await this.usersService.findById(req.user.id);
+    const xlmBalance = user.stellarPublicKey
+      ? await this.stellarService.getBalance(user.stellarPublicKey)
+      : '0';
+    const tnlBalance = user.stellarPublicKey
+      ? await this.sorobanService.getTokenBalance(user.stellarPublicKey)
+      : 0;
+
+    return {
+      custodialAddress: user.stellarPublicKey || null,
+      externalAddress: user.externalWalletAddress || null,
+      walletType: user.walletType || 'custodial',
+      xlmBalance,
+      tnlBalance,
+    };
+  }
+
+  @Post('users/me/wallet/connect')
+  @UseGuards(JwtAuthGuard)
+  async connectWallet(
+    @Req() req,
+    @Body() body: { address: string },
+  ) {
+    const user = await this.usersService.connectExternalWallet(
+      req.user.id,
+      body.address,
+    );
+    return {
+      message: 'External wallet connected successfully',
+      externalWalletAddress: user.externalWalletAddress,
+      walletType: user.walletType,
+    };
+  }
+
+  @Post('users/me/wallet/disconnect')
+  @UseGuards(JwtAuthGuard)
+  async disconnectWallet(@Req() req) {
+    const user = await this.usersService.disconnectExternalWallet(req.user.id);
+    return {
+      message: 'External wallet disconnected',
+      walletType: user.walletType,
+    };
+  }
+
+  @Post('users/me/wallet/withdraw')
+  @UseGuards(JwtAuthGuard)
+  async withdrawToExternal(
+    @Req() req,
+    @Body() body: { amount: string },
+  ) {
+    const user = await this.usersService.findById(req.user.id);
+
+    if (!user.externalWalletAddress) {
+      return { success: false, error: 'No external wallet connected' };
+    }
+    if (!user.stellarSecretKey) {
+      return { success: false, error: 'No custodial wallet available' };
+    }
+
+    const result = await this.stellarService.sendXLMReward(
+      user.stellarSecretKey,
+      user.externalWalletAddress,
+      body.amount,
+    );
+
+    return {
+      success: result.success,
+      txHash: result.txHash,
+      amount: body.amount,
+      destination: user.externalWalletAddress,
+      error: result.error,
+    };
+  }
+
+  @Post('users/me/wallet/export-secret')
+  @UseGuards(JwtAuthGuard)
+  async exportSecret(
+    @Req() req,
+    @Body() body: { password: string },
+  ) {
+    return this.usersService.exportSecretKey(req.user.id, body.password);
   }
 }

@@ -94,24 +94,24 @@ export function Navbar() {
             <BookOpen size={17} />
           </Link>
 
-          {user?.isPremium && (
+          {user?.plan !== 'free' && (
             <Link to="/leaderboard" style={{ color: 'var(--text-muted)', textDecoration: 'none', padding: '6px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', transition: 'color 0.15s' }} title="Ranking">
               <Trophy size={17} />
             </Link>
           )}
 
-          {!user?.isPremium && (
-            <Link to="/premium" style={{
-              display: 'flex', alignItems: 'center', gap: 5,
-              background: 'linear-gradient(135deg, rgba(245,166,35,0.15), rgba(233,30,140,0.15))',
-              border: '1px solid rgba(245,166,35,0.3)',
-              borderRadius: 6, padding: '4px 10px',
-              textDecoration: 'none', fontSize: '0.78rem', fontWeight: 700,
-              color: '#F5A623',
-            }}>
-              Premium
-            </Link>
-          )}
+          <Link to="/premium" style={{
+            display: 'flex', alignItems: 'center', gap: 5,
+            background: user?.plan === 'max'
+              ? 'linear-gradient(135deg, rgba(0,212,170,0.15), rgba(0,212,170,0.08))'
+              : 'linear-gradient(135deg, rgba(245,166,35,0.15), rgba(233,30,140,0.15))',
+            border: `1px solid ${user?.plan === 'max' ? 'rgba(0,212,170,0.3)' : 'rgba(245,166,35,0.3)'}`,
+            borderRadius: 6, padding: '4px 10px',
+            textDecoration: 'none', fontSize: '0.78rem', fontWeight: 700,
+            color: user?.plan === 'max' ? '#00D4AA' : '#F5A623',
+          }}>
+            {user?.plan === 'free' ? 'Pro' : user?.plan === 'pro' ? 'Pro' : 'Max'}
+          </Link>
 
           {user?.role === 'admin' && (
             <Link to="/admin" style={{ color: 'var(--gold)', textDecoration: 'none', padding: '6px 8px', borderRadius: 6, display: 'flex', alignItems: 'center', transition: 'color 0.15s' }} title="Panel Admin">

@@ -12,6 +12,7 @@ import { ProgressModule } from './progress/progress.module';
 import { ChaptersModule } from './chapters/chapters.module';
 import { PodiumModule } from './podium/podium.module';
 import { CertificatesModule } from './certificates/certificates.module';
+import { ActaModule } from './acta/acta.module';
 import { Chapter } from './chapters/entities/chapter.entity';
 import { ChapterModule as ChapterModuleEntity } from './chapters/entities/chapter-module.entity';
 import { ChapterProgress } from './chapters/entities/chapter-progress.entity';
@@ -55,6 +56,7 @@ import { Streak } from './users/entities/streak.entity';
     ChaptersModule,
     PodiumModule,
     CertificatesModule,
+    ActaModule,
   ],
   controllers: [AppController],
   providers: [AppService],

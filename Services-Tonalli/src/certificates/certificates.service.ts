@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ActaCertificate } from './entities/acta-certificate.entity';
 import { User } from '../users/entities/user.entity';
+import { ActaService } from '../acta/acta.service';
 
 @Injectable()
 export class CertificatesService {
@@ -13,9 +14,56 @@ export class CertificatesService {
     private readonly certRepo: Repository<ActaCertificate>,
     @InjectRepository(User)
     private readonly usersRepo: Repository<User>,
+    private readonly actaService: ActaService,
   ) {}
 
-  // Called after ACTA frontend issues the VC — stores metadata in DB
+  // Issue a real ACTA verifiable credential and store in DB
+  async issueActaCertificate(data: {
+    userId: string;
+    chapterId: string;
+    chapterTitle: string;
+    examScore: number;
+  }) {
+    const { txId, vcId } = await this.actaService.issueCredential(
+      data.userId,
+      data.chapterId,
+      data.chapterTitle,
+      data.examScore,
+    );
+
+    const cert = this.certRepo.create({
+      userId: data.userId,
+      chapterId: data.chapterId,
+      chapterTitle: data.chapterTitle,
+      actaVcId: vcId,
+      txHash: txId,
+      examScore: data.examScore,
+      type: 'official',
+      status: 'issued',
+    });
+
+    const saved = await this.certRepo.save(cert);
+    this.logger.log(
+      `[ACTA] Certificate issued: vcId=${vcId}, txId=${txId}, user=${data.userId}`,
+    );
+
+    return {
+      id: saved.id,
+      chapterId: saved.chapterId,
+      chapterTitle: saved.chapterTitle,
+      actaVcId: saved.actaVcId,
+      txHash: saved.txHash,
+      examScore: saved.examScore,
+      status: saved.status,
+      type: saved.type,
+      issuedAt: saved.issuedAt,
+      stellarExplorerUrl: saved.txHash
+        ? `https://stellar.expert/explorer/testnet/tx/${saved.txHash}`
+        : null,
+    };
+  }
+
+  // Called after ACTA frontend issues the VC — stores metadata in DB (legacy)
   async storeCertificate(data: {
     userId: string;
     chapterId: string;
@@ -56,7 +104,7 @@ export class CertificatesService {
     }));
   }
 
-  // Verify a certificate exists
+  // Verify a certificate exists (DB + on-chain)
   async verifyCertificate(actaVcId: string) {
     const cert = await this.certRepo.findOne({
       where: { actaVcId },
@@ -65,8 +113,17 @@ export class CertificatesService {
 
     if (!cert) throw new NotFoundException('Certificate not found');
 
+    // Also verify on-chain via ACTA
+    let onChainStatus: { status: string; since?: string } = { status: 'unknown' };
+    try {
+      onChainStatus = await this.actaService.verifyCredential(actaVcId);
+    } catch {
+      // Graceful fallback
+    }
+
     return {
       valid: cert.status === 'issued',
+      onChainStatus: onChainStatus.status,
       certificate: {
         id: cert.id,
         chapterTitle: cert.chapterTitle,
@@ -74,6 +131,9 @@ export class CertificatesService {
         examScore: cert.examScore,
         issuedAt: cert.issuedAt,
         txHash: cert.txHash,
+        stellarExplorerUrl: cert.txHash
+          ? `https://stellar.expert/explorer/testnet/tx/${cert.txHash}`
+          : null,
       },
     };
   }

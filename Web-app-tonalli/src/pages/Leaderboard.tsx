@@ -24,11 +24,11 @@ export function Leaderboard() {
   const [weeklyError, setWeeklyError] = useState('');
 
   useEffect(() => {
-    if (user?.isPremium) loadData();
-  }, [tab, user?.isPremium]);
+    if (user?.plan !== 'free') loadData();
+  }, [tab, user?.plan]);
 
-  // Premium gate — show upsell screen for free users
-  if (!user?.isPremium) {
+  // Plan gate — show upsell screen for free users
+  if (user?.plan === 'free') {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
         <motion.div
@@ -51,7 +51,7 @@ export function Leaderboard() {
             {t('weeklyPodium')}
           </h2>
           <p style={{ color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 32 }}>
-            {t('leaderboardPremiumDesc')}
+            El ranking semanal es exclusivo para usuarios Pro y Max. Mejora tu plan para competir por premios reales en XLM.
           </p>
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
@@ -62,7 +62,7 @@ export function Leaderboard() {
           }}>
             <Lock size={16} color="#FFD700" />
             <span style={{ fontSize: '0.85rem', color: '#FFD700', fontWeight: 600 }}>
-              {t('exclusivePremiumContent')}
+              Exclusivo para planes Pro y Max
             </span>
           </div>
           <button
@@ -152,7 +152,7 @@ export function Leaderboard() {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <span style={{ fontWeight: 900, fontSize: '0.95rem' }}>{entry.displayName || entry.username}</span>
-          {entry.isPremium && <Crown size={14} color="#FFD700" />}
+          {entry.plan && entry.plan !== 'free' && <Crown size={14} color="#FFD700" />}
           {entry.isCurrentUser && (
             <span className="badge badge-primary" style={{ fontSize: '0.7rem' }}>{t('you')}</span>
           )}

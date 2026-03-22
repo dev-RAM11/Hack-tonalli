@@ -16,7 +16,22 @@ export class CertificatesController {
     return this.certService.getUserCertificates(req.user.id);
   }
 
-  /** POST /api/certificates/store — Store certificate after ACTA frontend issuance */
+  /** POST /api/certificates/issue — Issue ACTA verifiable credential */
+  @UseGuards(JwtAuthGuard)
+  @Post('issue')
+  issueActaCertificate(
+    @Body() data: { chapterId: string; chapterTitle: string; examScore: number },
+    @Req() req: any,
+  ) {
+    return this.certService.issueActaCertificate({
+      userId: req.user.id,
+      chapterId: data.chapterId,
+      chapterTitle: data.chapterTitle,
+      examScore: data.examScore,
+    });
+  }
+
+  /** POST /api/certificates/store — Store certificate (legacy) */
   @UseGuards(JwtAuthGuard)
   @Post('store')
   storeCertificate(@Body() data: any, @Req() req: any) {

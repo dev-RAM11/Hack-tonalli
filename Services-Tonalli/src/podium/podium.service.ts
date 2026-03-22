@@ -33,7 +33,7 @@ export class PodiumService {
   // Update a user's weekly score (called when they complete activities)
   async updateScore(userId: string) {
     const user = await this.usersRepo.findOne({ where: { id: userId } });
-    if (!user?.isPremium) return; // Only premium users participate
+    if (user?.plan === 'free') return; // Only Pro/Max users participate
 
     const week = this.getCurrentWeek();
     let score = await this.scoresRepo.findOne({ where: { userId, week } });
@@ -80,8 +80,8 @@ export class PodiumService {
   // Get current week's leaderboard (Premium only)
   async getWeeklyLeaderboard(userId: string) {
     const user = await this.usersRepo.findOne({ where: { id: userId } });
-    if (!user?.isPremium) {
-      throw new ForbiddenException('El podio es exclusivo para usuarios Premium');
+    if (user?.plan === 'free') {
+      throw new ForbiddenException('El podio es exclusivo para usuarios Pro y Max');
     }
 
     const week = this.getCurrentWeek();
@@ -127,7 +127,7 @@ export class PodiumService {
       xp: u.totalXp,
       streak: u.currentStreak,
       character: u.character || 'chima',
-      isPremium: u.isPremium,
+      plan: u.plan || 'free',
     }));
   }
 
@@ -195,8 +195,8 @@ export class PodiumService {
       const user = score.user;
       const rewardUsd = rewardAmounts[i];
 
-      // Check if user has premium (anti-cheat)
-      if (!user?.isPremium) continue;
+      // Check if user has Pro/Max plan (anti-cheat)
+      if (user?.plan === 'free') continue;
 
       const reward = this.rewardsRepo.create({
         userId: score.userId,

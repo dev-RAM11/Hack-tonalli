@@ -233,6 +233,23 @@ export const apiService = {
     return res.data;
   },
 
+  // ── Podium NFTs ────────────────────────────────────────────────────────
+  getPodiumNfts: async () => {
+    const res = await api.get('/podium/nfts');
+    return res.data;
+  },
+
+  // ── Reward History (on-chain) ────────────────────────────────────────
+  getRewardHistory: async () => {
+    const res = await api.get('/users/me/rewards/history');
+    return res.data;
+  },
+
+  getTotalRewards: async () => {
+    const res = await api.get('/users/me/rewards/total');
+    return res.data;
+  },
+
   // ── Certificates (ACTA) ─────────────────────────────────────────────────
   getCertificates: async () => {
     const res = await api.get('/certificates');

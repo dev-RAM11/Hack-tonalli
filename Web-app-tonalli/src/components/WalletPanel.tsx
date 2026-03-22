@@ -1,175 +1,439 @@
 import { useEffect, useState } from 'react';
-import { Wallet, Copy, ExternalLink, Check, Download, Shield } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Wallet, ExternalLink, Copy, Check, LogOut, Download, Send, Link2 } from 'lucide-react';
 import { apiService } from '../services/api';
-import { useFreighter } from '../hooks/useFreighter';
+import type { WalletBalance } from '../types';
+import { useT } from '../hooks/useT';
 
 interface WalletPanelProps {
-  walletAddress: string;
+  walletAddress?: string;
   externalWalletAddress?: string | null;
   walletType?: string;
   onWalletUpdate?: () => void;
 }
 
-export function WalletPanel({ walletAddress, externalWalletAddress, walletType, onWalletUpdate }: WalletPanelProps) {
-  const [balance, setBalance] = useState<{ xlmBalance?: string; tnlBalance?: number } | null>(null);
+export function WalletPanel({
+  walletAddress,
+  externalWalletAddress,
+  walletType = 'custodial',
+  onWalletUpdate,
+}: WalletPanelProps) {
+  const t = useT();
+  const [balance, setBalance] = useState<WalletBalance | null>(null);
   const [copied, setCopied] = useState(false);
+  const [showConnect, setShowConnect] = useState(false);
+  const [showWithdraw, setShowWithdraw] = useState(false);
+  const [showExport, setShowExport] = useState(false);
+  const [connectAddress, setConnectAddress] = useState('');
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [exportPassword, setExportPassword] = useState('');
+  const [exportedKey, setExportedKey] = useState('');
   const [loading, setLoading] = useState(false);
-  const freighter = useFreighter();
+  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
-    apiService.getWalletBalance().then(setBalance).catch(() => {});
-  }, [walletAddress]);
+    loadBalance();
+  }, []);
 
-  const shortAddr = (addr: string) =>
-    addr.length > 12 ? `${addr.slice(0, 6)}...${addr.slice(-6)}` : addr;
+  const loadBalance = async () => {
+    try {
+      const data = await apiService.getWalletBalance();
+      setBalance(data);
+    } catch {
+      // ignore
+    }
+  };
 
-  const copyAddress = () => {
-    navigator.clipboard.writeText(walletAddress);
+  const copyAddress = (addr: string) => {
+    navigator.clipboard.writeText(addr);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleFreighterConnect = async () => {
+  const handleConnect = async () => {
+    if (!connectAddress.startsWith('G') || connectAddress.length !== 56) {
+      setMessage({ text: 'Direccion Stellar invalida (debe empezar con G, 56 caracteres)', type: 'error' });
+      return;
+    }
     setLoading(true);
     try {
-      const publicKey = await freighter.connect();
-      if (publicKey) {
-        await apiService.connectWallet(publicKey);
-        onWalletUpdate?.();
-      }
-    } catch { /* ignore */ }
-    setLoading(false);
+      await apiService.connectWallet(connectAddress);
+      setMessage({ text: 'Wallet externa conectada', type: 'success' });
+      setShowConnect(false);
+      setConnectAddress('');
+      loadBalance();
+      onWalletUpdate?.();
+    } catch (err: any) {
+      setMessage({ text: err.response?.data?.message || 'Error al conectar', type: 'error' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDisconnect = async () => {
     setLoading(true);
     try {
       await apiService.disconnectWallet();
-      freighter.disconnect();
+      setMessage({ text: 'Wallet externa desconectada', type: 'success' });
+      loadBalance();
       onWalletUpdate?.();
-    } catch { /* ignore */ }
-    setLoading(false);
+    } catch {
+      setMessage({ text: 'Error al desconectar', type: 'error' });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  return (
-    <div className="card" style={{ border: '1px solid rgba(155,89,182,0.3)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-        <Wallet size={18} color="#9B59B6" />
-        <span style={{ fontWeight: 900 }}>Wallet Stellar</span>
-        {walletType && (
-          <span style={{
-            fontSize: '0.65rem', background: 'rgba(155,89,182,0.15)',
-            color: '#9B59B6', padding: '2px 8px', borderRadius: 20, fontWeight: 700,
-          }}>
-            {walletType}
-          </span>
-        )}
-      </div>
+  const handleWithdraw = async () => {
+    const amount = parseFloat(withdrawAmount);
+    if (isNaN(amount) || amount <= 0) {
+      setMessage({ text: 'Cantidad invalida', type: 'error' });
+      return;
+    }
+    setLoading(true);
+    try {
+      const result = await apiService.withdrawToExternal(withdrawAmount);
+      if (result.success) {
+        setMessage({ text: `${withdrawAmount} XLM enviados. TX: ${result.txHash?.substring(0, 12)}...`, type: 'success' });
+        setShowWithdraw(false);
+        setWithdrawAmount('');
+        loadBalance();
+      } else {
+        setMessage({ text: result.error || 'Error en el retiro', type: 'error' });
+      }
+    } catch (err: any) {
+      setMessage({ text: err.response?.data?.message || 'Error en el retiro', type: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      {/* Custodial Address */}
-      <div style={{
-        background: 'var(--bg)', borderRadius: 8, padding: '10px 12px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        marginBottom: 12, fontSize: '0.8rem', fontFamily: 'monospace',
-      }}>
-        <span>{shortAddr(walletAddress)}</span>
-        <button onClick={copyAddress} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4 }}>
-          {copied ? <Check size={14} color="var(--primary)" /> : <Copy size={14} />}
-        </button>
+  const handleExport = async () => {
+    if (!exportPassword) {
+      setMessage({ text: 'Ingresa tu password', type: 'error' });
+      return;
+    }
+    setLoading(true);
+    try {
+      const result = await apiService.exportSecretKey(exportPassword);
+      setExportedKey(result.secretKey);
+      setMessage({ text: 'Secret key revelada. Guardala en un lugar seguro.', type: 'success' });
+    } catch (err: any) {
+      setMessage({ text: err.response?.data?.message || 'Password incorrecto', type: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const xlmBalance = balance?.xlmBalance || '0';
+  const tnlBalance = balance?.tnlBalance || 0;
+  const hasExternal = !!(balance?.externalAddress || externalWalletAddress);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.2 }}
+      className="card"
+      style={{ padding: 20 }}
+    >
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <div style={{ fontWeight: 900, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Wallet size={18} color="var(--accent)" />
+          Stellar Wallet
+        </div>
+        <span style={{
+          fontSize: '0.65rem',
+          padding: '2px 8px',
+          borderRadius: 12,
+          background: hasExternal ? 'rgba(46,139,63,0.2)' : 'rgba(155,89,182,0.2)',
+          color: hasExternal ? 'var(--primary)' : '#9B59B6',
+          fontWeight: 700,
+        }}>
+          {hasExternal ? 'Hibrida' : 'Custodial'}
+        </span>
       </div>
 
       {/* Balances */}
-      {balance && (
-        <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
-          <div style={{
-            flex: 1, background: 'rgba(46,139,63,0.1)', borderRadius: 8,
-            padding: '10px 12px', textAlign: 'center',
-          }}>
-            <div style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--primary)' }}>
-              {balance.xlmBalance || '0'}
-            </div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>XLM</div>
-          </div>
-          <div style={{
-            flex: 1, background: 'rgba(155,89,182,0.1)', borderRadius: 8,
-            padding: '10px 12px', textAlign: 'center',
-          }}>
-            <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#9B59B6' }}>
-              {balance.tnlBalance || 0}
-            </div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>TNL</div>
-          </div>
+      <div style={{
+        background: 'linear-gradient(135deg, rgba(46,139,63,0.1), rgba(245,197,24,0.1))',
+        borderRadius: 12,
+        padding: '14px 16px',
+        marginBottom: 12,
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>XLM</span>
+          <span style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--accent)' }}>
+            {parseFloat(xlmBalance).toFixed(2)}
+          </span>
         </div>
-      )}
-
-      {/* Freighter connected external wallet */}
-      {externalWalletAddress && (
-        <div style={{
-          fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 12,
-          display: 'flex', alignItems: 'center', gap: 4,
-        }}>
-          <Shield size={12} color="#9B59B6" />
-          Freighter: {shortAddr(externalWalletAddress)}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>TNL</span>
+          <span style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--primary)' }}>
+            {tnlBalance.toFixed(2)}
+          </span>
         </div>
-      )}
+      </div>
 
-      {/* Freighter Connect Button */}
-      {!externalWalletAddress && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <button
-            onClick={handleFreighterConnect}
-            disabled={loading || freighter.loading}
+      {/* Custodial address */}
+      {walletAddress && (
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 4 }}>Custodial</div>
+          <div
+            onClick={() => copyAddress(walletAddress)}
             style={{
-              width: '100%', padding: '10px 12px', borderRadius: 8,
-              background: 'linear-gradient(135deg, #4A1A7A, #7B2FBE)',
-              border: '1px solid rgba(155,89,182,0.5)',
-              color: '#fff', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              opacity: loading ? 0.7 : 1,
+              background: 'var(--background)',
+              borderRadius: 8,
+              padding: '8px 10px',
+              fontSize: '0.65rem',
+              fontFamily: 'monospace',
+              color: 'var(--text-muted)',
+              wordBreak: 'break-all',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
             }}
           >
-            <Download size={14} />
-            {loading ? 'Conectando...' : 'Conectar con Freighter'}
-          </button>
+            <span style={{ flex: 1 }}>{walletAddress}</span>
+            {copied ? <Check size={12} color="var(--primary)" /> : <Copy size={12} />}
+          </div>
+        </div>
+      )}
 
-          {!freighter.isInstalled && !freighter.loading && (
-            <a
-              href="https://www.freighter.app/"
-              target="_blank"
-              rel="noopener noreferrer"
+      {/* External address */}
+      {hasExternal && (
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
+            <span>Externa (Decaf/Freighter)</span>
+            <button
+              onClick={handleDisconnect}
+              disabled={loading}
               style={{
-                textAlign: 'center', fontSize: '0.7rem', color: '#9B59B6',
-                textDecoration: 'none', display: 'flex', alignItems: 'center',
-                justifyContent: 'center', gap: 4,
+                background: 'none', border: 'none', color: '#e74c3c',
+                fontSize: '0.65rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 2,
               }}
             >
-              <ExternalLink size={10} />
-              Descarga Freighter (extensión Chrome)
-            </a>
-          )}
+              <LogOut size={10} /> Desconectar
+            </button>
+          </div>
+          <div style={{
+            background: 'rgba(46,139,63,0.08)',
+            borderRadius: 8,
+            padding: '8px 10px',
+            fontSize: '0.65rem',
+            fontFamily: 'monospace',
+            color: 'var(--primary)',
+            wordBreak: 'break-all',
+            border: '1px solid rgba(46,139,63,0.2)',
+          }}>
+            {balance?.externalAddress || externalWalletAddress}
+          </div>
+        </div>
+      )}
 
-          {freighter.error && (
-            <div style={{ fontSize: '0.7rem', color: '#e74c3c', textAlign: 'center' }}>
-              {freighter.error}
+      {/* Action buttons */}
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 12 }}>
+        {!hasExternal && (
+          <button
+            onClick={() => { setShowConnect(!showConnect); setShowWithdraw(false); setShowExport(false); }}
+            style={{
+              flex: 1, padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)',
+              background: 'var(--background)', color: 'var(--text)', fontSize: '0.75rem',
+              fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+            }}
+          >
+            <Link2 size={12} /> Conectar
+          </button>
+        )}
+
+        {hasExternal && (
+          <button
+            onClick={() => { setShowWithdraw(!showWithdraw); setShowConnect(false); setShowExport(false); }}
+            style={{
+              flex: 1, padding: '8px 10px', borderRadius: 8, border: 'none',
+              background: 'var(--primary)', color: '#fff', fontSize: '0.75rem',
+              fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+            }}
+          >
+            <Send size={12} /> Retirar
+          </button>
+        )}
+
+        <button
+          onClick={() => { setShowExport(!showExport); setShowConnect(false); setShowWithdraw(false); setExportedKey(''); }}
+          style={{
+            flex: 1, padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)',
+            background: 'var(--background)', color: 'var(--text)', fontSize: '0.75rem',
+            fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+          }}
+        >
+          <Download size={12} /> Exportar
+        </button>
+
+        {walletAddress && (
+          <a
+            href={`https://stellar.expert/explorer/testnet/account/${walletAddress}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)',
+              background: 'var(--background)', color: 'var(--text)', fontSize: '0.75rem',
+              fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+              textDecoration: 'none',
+            }}
+          >
+            <ExternalLink size={12} />
+          </a>
+        )}
+      </div>
+
+      {/* Connect form */}
+      {showConnect && (
+        <div style={{ marginTop: 12, padding: 12, background: 'var(--background)', borderRadius: 8 }}>
+          <div style={{ fontSize: '0.75rem', fontWeight: 700, marginBottom: 8 }}>
+            Conectar wallet externa
+          </div>
+          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 8 }}>
+            Pega la direccion publica de tu wallet (Decaf, Freighter, Lobstr, etc.)
+          </div>
+          <input
+            type="text"
+            placeholder="G..."
+            value={connectAddress}
+            onChange={(e) => setConnectAddress(e.target.value)}
+            style={{
+              width: '100%', padding: '8px 10px', borderRadius: 6,
+              border: '1px solid var(--border)', background: 'var(--card)',
+              color: 'var(--text)', fontSize: '0.75rem', fontFamily: 'monospace',
+              boxSizing: 'border-box',
+            }}
+          />
+          <button
+            onClick={handleConnect}
+            disabled={loading || !connectAddress}
+            style={{
+              width: '100%', marginTop: 8, padding: '8px', borderRadius: 6,
+              border: 'none', background: 'var(--primary)', color: '#fff',
+              fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer',
+              opacity: loading ? 0.6 : 1,
+            }}
+          >
+            {loading ? 'Conectando...' : 'Conectar wallet'}
+          </button>
+        </div>
+      )}
+
+      {/* Withdraw form */}
+      {showWithdraw && (
+        <div style={{ marginTop: 12, padding: 12, background: 'var(--background)', borderRadius: 8 }}>
+          <div style={{ fontSize: '0.75rem', fontWeight: 700, marginBottom: 8 }}>
+            Retirar XLM a wallet externa
+          </div>
+          <input
+            type="number"
+            placeholder="Cantidad en XLM"
+            value={withdrawAmount}
+            onChange={(e) => setWithdrawAmount(e.target.value)}
+            step="0.01"
+            min="0.01"
+            style={{
+              width: '100%', padding: '8px 10px', borderRadius: 6,
+              border: '1px solid var(--border)', background: 'var(--card)',
+              color: 'var(--text)', fontSize: '0.75rem',
+              boxSizing: 'border-box',
+            }}
+          />
+          <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', margin: '4px 0' }}>
+            Disponible: {parseFloat(xlmBalance).toFixed(2)} XLM
+          </div>
+          <button
+            onClick={handleWithdraw}
+            disabled={loading || !withdrawAmount}
+            style={{
+              width: '100%', marginTop: 4, padding: '8px', borderRadius: 6,
+              border: 'none', background: 'var(--primary)', color: '#fff',
+              fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer',
+              opacity: loading ? 0.6 : 1,
+            }}
+          >
+            {loading ? 'Enviando...' : 'Enviar XLM'}
+          </button>
+        </div>
+      )}
+
+      {/* Export secret key */}
+      {showExport && (
+        <div style={{ marginTop: 12, padding: 12, background: 'var(--background)', borderRadius: 8 }}>
+          <div style={{ fontSize: '0.75rem', fontWeight: 700, marginBottom: 4 }}>
+            Exportar secret key
+          </div>
+          <div style={{ fontSize: '0.65rem', color: '#e74c3c', marginBottom: 8 }}>
+            Nunca compartas tu secret key. Cualquiera con acceso puede mover tus fondos.
+          </div>
+          {!exportedKey ? (
+            <>
+              <input
+                type="password"
+                placeholder="Confirma tu password"
+                value={exportPassword}
+                onChange={(e) => setExportPassword(e.target.value)}
+                style={{
+                  width: '100%', padding: '8px 10px', borderRadius: 6,
+                  border: '1px solid var(--border)', background: 'var(--card)',
+                  color: 'var(--text)', fontSize: '0.75rem',
+                  boxSizing: 'border-box',
+                }}
+              />
+              <button
+                onClick={handleExport}
+                disabled={loading || !exportPassword}
+                style={{
+                  width: '100%', marginTop: 8, padding: '8px', borderRadius: 6,
+                  border: '1px solid #e74c3c', background: 'transparent', color: '#e74c3c',
+                  fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer',
+                  opacity: loading ? 0.6 : 1,
+                }}
+              >
+                {loading ? 'Verificando...' : 'Revelar secret key'}
+              </button>
+            </>
+          ) : (
+            <div
+              onClick={() => copyAddress(exportedKey)}
+              style={{
+                background: 'rgba(231,76,60,0.1)',
+                border: '1px solid rgba(231,76,60,0.3)',
+                borderRadius: 6,
+                padding: '8px 10px',
+                fontSize: '0.6rem',
+                fontFamily: 'monospace',
+                color: '#e74c3c',
+                wordBreak: 'break-all',
+                cursor: 'pointer',
+              }}
+            >
+              {exportedKey}
+              <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                Click para copiar. Importa esta key en Decaf, Freighter o Lobstr.
+              </div>
             </div>
           )}
         </div>
       )}
 
-      {/* Disconnect */}
-      {externalWalletAddress && (
-        <button
-          onClick={handleDisconnect}
-          disabled={loading}
-          style={{
-            width: '100%', padding: '8px 12px', borderRadius: 8,
-            background: 'rgba(231,76,60,0.1)', border: '1px solid rgba(231,76,60,0.3)',
-            color: '#e74c3c', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer',
-          }}
-        >
-          {loading ? '...' : 'Desconectar Freighter'}
-        </button>
+      {/* Message */}
+      {message && (
+        <div style={{
+          marginTop: 10, padding: '8px 10px', borderRadius: 6,
+          fontSize: '0.7rem', fontWeight: 600,
+          background: message.type === 'success' ? 'rgba(46,139,63,0.15)' : 'rgba(231,76,60,0.15)',
+          color: message.type === 'success' ? 'var(--primary)' : '#e74c3c',
+        }}>
+          {message.text}
+        </div>
       )}
-    </div>
+    </motion.div>
   );
 }

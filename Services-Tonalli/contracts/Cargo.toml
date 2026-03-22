@@ -4,6 +4,7 @@ members = [
     "nft-certificate",
     "learn-to-earn",
     "podio-nft",
+    "tonalli-token",
 ]
 
 [workspace.dependencies]

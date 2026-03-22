@@ -170,6 +170,24 @@ export interface WeeklyLeaderboard {
   }>;
 }
 
+export interface PodiumNFT {
+  id: string;
+  week: string;
+  position: number;
+  rewardUsd: number;
+  rewardXlm: string;
+  txHash: string;
+  nftTxHash: string | null;
+  createdAt: string;
+  stellarExplorerUrl: string | null;
+}
+
+export interface RewardHistoryEntry {
+  lessonId: string;
+  amount: number;    // stroops
+  timestamp: number;
+}
+
 export interface WalletBalance {
   custodialAddress: string | null;
   externalAddress: string | null;

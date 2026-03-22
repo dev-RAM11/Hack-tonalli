@@ -18,6 +18,13 @@ export class PodiumController {
     return this.podiumService.getWeeklyLeaderboard(req.user.id);
   }
 
+  /** GET /api/podium/nfts — User's podium NFT trophies */
+  @UseGuards(JwtAuthGuard)
+  @Get('nfts')
+  getUserPodiumNfts(@Req() req: any) {
+    return this.podiumService.getUserPodiumNfts(req.user.id);
+  }
+
   /** GET /api/podium/global — All-time leaderboard for everyone */
   @UseGuards(JwtAuthGuard)
   @Get('global')

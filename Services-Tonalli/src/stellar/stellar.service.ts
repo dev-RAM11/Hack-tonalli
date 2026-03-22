@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import * as StellarSdk from '@stellar/stellar-sdk';
 
 export interface StellarKeypair {
@@ -25,12 +26,16 @@ export class StellarService {
   private readonly logger = new Logger(StellarService.name);
   private readonly server: StellarSdk.Horizon.Server;
   private readonly networkPassphrase: string;
+  private readonly rewardPoolSecret: string | null;
 
-  constructor() {
+  constructor(private readonly configService: ConfigService) {
     const horizonUrl =
-      process.env.STELLAR_HORIZON_URL || 'https://horizon-testnet.stellar.org';
+      this.configService.get('STELLAR_HORIZON_URL') ||
+      'https://horizon-testnet.stellar.org';
     this.server = new StellarSdk.Horizon.Server(horizonUrl);
     this.networkPassphrase = StellarSdk.Networks.TESTNET;
+    this.rewardPoolSecret =
+      this.configService.get('REWARD_POOL_SECRET') || null;
   }
 
   createKeypair(): StellarKeypair {
@@ -164,6 +169,101 @@ export class StellarService {
         success: false,
         txHash: `SIMULATED_${Date.now()}_${lessonId.substring(0, 8)}`,
         assetCode: `TNLCERT`,
+        issuerPublicKey: userPublicKey,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Send XLM reward from admin/reward pool wallet to user.
+   * This avoids needing the user's secret key.
+   */
+  async sendRewardFromAdmin(
+    toPublicKey: string,
+    amount: string,
+  ): Promise<{ success: boolean; txHash?: string; error?: string }> {
+    if (!this.rewardPoolSecret) {
+      this.logger.warn(
+        'REWARD_POOL_SECRET not set — simulating reward transfer',
+      );
+      return {
+        success: true,
+        txHash: `SIMULATED_ADMIN_REWARD_${Date.now()}`,
+      };
+    }
+
+    return this.sendXLMReward(this.rewardPoolSecret, toPublicKey, amount);
+  }
+
+  /**
+   * Mint NFT certificate signed by admin wallet (no user secret key needed).
+   */
+  async mintNFTFromAdmin(
+    userPublicKey: string,
+    lessonTitle: string,
+    lessonId: string,
+  ): Promise<NFTMintResult> {
+    if (!this.rewardPoolSecret) {
+      this.logger.warn('REWARD_POOL_SECRET not set — simulating NFT mint');
+      return {
+        success: true,
+        txHash: `SIMULATED_NFT_${Date.now()}_${lessonId.substring(0, 8)}`,
+        assetCode: 'TNLCERT',
+        issuerPublicKey: userPublicKey,
+      };
+    }
+
+    try {
+      const adminKeypair = StellarSdk.Keypair.fromSecret(this.rewardPoolSecret);
+      const adminAccount = await this.server.loadAccount(
+        adminKeypair.publicKey(),
+      );
+
+      const sanitized = lessonTitle
+        .replace(/[^A-Z0-9]/gi, '')
+        .toUpperCase()
+        .substring(0, 8);
+      const assetCode = `TNL${sanitized}`.substring(0, 12);
+
+      const transaction = new StellarSdk.TransactionBuilder(adminAccount, {
+        fee: StellarSdk.BASE_FEE,
+        networkPassphrase: this.networkPassphrase,
+      })
+        .addOperation(
+          StellarSdk.Operation.manageData({
+            name: `TONALLI_CERT_${lessonId.substring(0, 20)}`,
+            value: Buffer.from(
+              JSON.stringify({
+                lesson: lessonId,
+                title: lessonTitle,
+                owner: userPublicKey,
+                platform: 'Tonalli',
+                issuedAt: new Date().toISOString(),
+              }).substring(0, 64),
+            ),
+          }),
+        )
+        .addMemo(StellarSdk.Memo.text('Tonalli NFT Certificate'))
+        .setTimeout(60)
+        .build();
+
+      transaction.sign(adminKeypair);
+      const result = await this.server.submitTransaction(transaction);
+
+      this.logger.log(`NFT minted (admin) for lesson ${lessonId}: ${result.hash}`);
+      return {
+        success: true,
+        txHash: result.hash,
+        assetCode,
+        issuerPublicKey: adminKeypair.publicKey(),
+      };
+    } catch (error) {
+      this.logger.error(`Admin NFT mint error: ${error.message}`);
+      return {
+        success: false,
+        txHash: `SIMULATED_NFT_${Date.now()}_${lessonId.substring(0, 8)}`,
+        assetCode: 'TNLCERT',
         issuerPublicKey: userPublicKey,
         error: error.message,
       };

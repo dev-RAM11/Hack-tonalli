@@ -33,6 +33,9 @@ export class PodiumReward {
   @Column({ nullable: true })
   txHash: string;
 
+  @Column({ nullable: true })
+  nftTxHash: string;
+
   @Column({ default: 'pending' })
   status: 'pending' | 'paid' | 'retained' | 'reassigned';
 

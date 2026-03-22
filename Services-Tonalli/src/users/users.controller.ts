@@ -59,6 +59,23 @@ export class UsersController {
     return this.usersService.upgradePlan(req.user.id, plan);
   }
 
+  @Get('users/me/rewards/history')
+  @UseGuards(JwtAuthGuard)
+  async getRewardHistory(@Req() req) {
+    const user = await this.usersService.findById(req.user.id);
+    if (!user.stellarPublicKey) return [];
+    return this.sorobanService.getRewardHistory(user.stellarPublicKey);
+  }
+
+  @Get('users/me/rewards/total')
+  @UseGuards(JwtAuthGuard)
+  async getTotalRewards(@Req() req) {
+    const user = await this.usersService.findById(req.user.id);
+    if (!user.stellarPublicKey) return { totalStroops: 0, totalXlm: 0 };
+    const totalStroops = await this.sorobanService.getUserTotalRewards(user.stellarPublicKey);
+    return { totalStroops, totalXlm: totalStroops / 10_000_000 };
+  }
+
   @Get('rankings')
   async getRankings() {
     return this.usersService.getRankings();

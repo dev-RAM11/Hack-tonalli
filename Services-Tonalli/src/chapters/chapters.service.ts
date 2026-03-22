@@ -479,6 +479,27 @@ export class ChaptersService {
             // Non-blocking: log but don't fail the quiz submission
             console.error('NFT mint error:', e.message);
           }
+
+          // On-chain XLM reward via Learn-to-Earn contract
+          try {
+            const xlmAmount = (mod.xpReward || 50) / 100; // 0.5 XLM per 50 XP
+            await this.sorobanService.rewardUser({
+              userPublicKey: user.stellarPublicKey,
+              lessonId: mod.chapterId,
+              amountXlm: xlmAmount,
+              score,
+            });
+          } catch (e) {
+            console.error('On-chain reward error:', e.message);
+          }
+
+          // Mint TNL tokens
+          try {
+            const tnlAmount = (mod.xpReward || 50) / 10;
+            await this.sorobanService.mintTokens(user.stellarPublicKey, tnlAmount);
+          } catch (e) {
+            console.error('TNL mint error:', e.message);
+          }
         }
       } else if (!isFinalExam && !progress.quizCompleted) {
         progress.quizCompleted = true;
@@ -491,6 +512,28 @@ export class ChaptersService {
           user.xp += mod.xpReward;
           user.totalXp += mod.xpReward;
           await this.usersRepo.save(user);
+
+          // On-chain XLM reward via Learn-to-Earn contract for lesson modules
+          if (user.stellarPublicKey) {
+            try {
+              const xlmAmount = (mod.xpReward || 30) / 100; // 0.3 XLM per 30 XP
+              await this.sorobanService.rewardUser({
+                userPublicKey: user.stellarPublicKey,
+                lessonId: mod.id,
+                amountXlm: xlmAmount,
+                score,
+              });
+            } catch (e) {
+              console.error('On-chain reward error (module):', e.message);
+            }
+
+            try {
+              const tnlAmount = (mod.xpReward || 30) / 10;
+              await this.sorobanService.mintTokens(user.stellarPublicKey, tnlAmount);
+            } catch (e) {
+              console.error('TNL mint error (module):', e.message);
+            }
+          }
         }
       }
     }

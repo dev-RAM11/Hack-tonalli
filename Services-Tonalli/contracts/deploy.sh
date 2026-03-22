@@ -128,6 +128,28 @@ stellar contract invoke \
 
 echo "✅ Rewards contract inicializado con pool de XLM"
 
+# ── Deploy Podio NFT Contract ────────────────────────────────────────────────
+echo ""
+echo "🚀 Desplegando Podio NFT Contract..."
+PODIUM_NFT_CONTRACT_ID=$(stellar contract deploy \
+  --wasm target/wasm32-unknown-unknown/release/podio_nft.wasm \
+  --source tonalli-admin \
+  --network $NETWORK \
+  2>&1 | grep -E "^C" | head -1)
+
+echo "✅ Podium NFT Contract ID: $PODIUM_NFT_CONTRACT_ID"
+
+# Inicializar Podio NFT contract
+echo "⚙️  Inicializando Podio NFT contract..."
+stellar contract invoke \
+  --id $PODIUM_NFT_CONTRACT_ID \
+  --source tonalli-admin \
+  --network $NETWORK \
+  -- initialize \
+  --admin $ADMIN_PUBLIC
+
+echo "✅ Podium NFT contract inicializado"
+
 # ── Guardar configuración ─────────────────────────────────────────────────────
 echo ""
 echo "💾 Guardando configuración en .env.contracts..."
@@ -144,6 +166,7 @@ STELLAR_ADMIN_PUBLIC=$ADMIN_PUBLIC
 # Contratos Soroban desplegados
 NFT_CONTRACT_ID=$NFT_CONTRACT_ID
 REWARDS_CONTRACT_ID=$REWARDS_CONTRACT_ID
+PODIUM_NFT_CONTRACT_ID=$PODIUM_NFT_CONTRACT_ID
 
 # XLM Stellar Asset Contract (SAC)
 XLM_SAC_ADDRESS=$XLM_SAC
@@ -157,17 +180,20 @@ echo "========================================="
 echo "🎉 ¡Deployment completado exitosamente!"
 echo "========================================="
 echo ""
-echo "  NFT Contract:     $NFT_CONTRACT_ID"
-echo "  Rewards Contract: $REWARDS_CONTRACT_ID"
-echo "  Admin:            $ADMIN_PUBLIC"
-echo "  Red:              $NETWORK"
+echo "  NFT Contract:        $NFT_CONTRACT_ID"
+echo "  Rewards Contract:    $REWARDS_CONTRACT_ID"
+echo "  Podium NFT Contract: $PODIUM_NFT_CONTRACT_ID"
+echo "  Admin:               $ADMIN_PUBLIC"
+echo "  Red:                 $NETWORK"
 echo ""
 echo "  Agrega estas variables a tu .env del backend:"
 echo "  NFT_CONTRACT_ID=$NFT_CONTRACT_ID"
 echo "  REWARDS_CONTRACT_ID=$REWARDS_CONTRACT_ID"
+echo "  PODIUM_NFT_CONTRACT_ID=$PODIUM_NFT_CONTRACT_ID"
 echo "  STELLAR_ADMIN_SECRET=<tu-secret-key>"
 echo ""
 echo "  Explorador:"
 echo "  https://stellar.expert/explorer/testnet/contract/$NFT_CONTRACT_ID"
 echo "  https://stellar.expert/explorer/testnet/contract/$REWARDS_CONTRACT_ID"
+echo "  https://stellar.expert/explorer/testnet/contract/$PODIUM_NFT_CONTRACT_ID"
 echo ""

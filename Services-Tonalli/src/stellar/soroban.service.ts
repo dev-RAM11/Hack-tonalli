@@ -30,6 +30,29 @@ export interface RewardUserParams {
   score: number;
 }
 
+export interface MintPodiumNftParams {
+  week: string;           // e.g. "2026-W12"
+  userPublicKey: string;
+  rank: number;           // 1, 2, or 3
+  xlmRewardStroops: number;
+  txHash: string;         // XLM reward tx hash
+}
+
+export interface PodiumNFTData {
+  rank: number;
+  xlmReward: number;
+  week: string;
+  txHash: string;
+  issuedAt: number;
+  owner: string;
+}
+
+export interface RewardHistoryEntry {
+  lessonId: string;
+  amount: number;    // stroops
+  timestamp: number;
+}
+
 export interface CertificateData {
   tokenId: number;
   owner: string;
@@ -53,6 +76,8 @@ export class SorobanService {
   // Direcciones de los contratos desplegados (se configuran en .env)
   private nftContractId: string;
   private rewardsContractId: string;
+  private tokenContractId: string;
+  private podiumNftContractId: string;
 
   constructor(private configService: ConfigService) {
     const horizonUrl =
@@ -79,6 +104,10 @@ export class SorobanService {
     this.nftContractId = this.configService.get('NFT_CONTRACT_ID') || '';
     this.rewardsContractId =
       this.configService.get('REWARDS_CONTRACT_ID') || '';
+    this.tokenContractId =
+      this.configService.get('TOKEN_CONTRACT_ID') || '';
+    this.podiumNftContractId =
+      this.configService.get('PODIUM_NFT_CONTRACT_ID') || '';
   }
 
   // ── NFT Certificate ────────────────────────────────────────────────────────
@@ -261,6 +290,270 @@ export class SorobanService {
     }
   }
 
+  // ── Tonalli Token (TNL) ──────────────────────────────────────────────────
+
+  /**
+   * Mint TNL tokens to a user (admin only).
+   * Called when user completes a lesson or earns rewards.
+   */
+  async mintTokens(
+    toPublicKey: string,
+    amount: number,
+  ): Promise<{ success: boolean; txHash: string; amount: number }> {
+    if (!this.tokenContractId) {
+      this.logger.warn('TOKEN_CONTRACT_ID not set — using mock response');
+      return this.mockMintTokens(toPublicKey, amount);
+    }
+
+    try {
+      const contract = new Contract(this.tokenContractId);
+
+      // amount is in TNL units, convert to smallest unit (7 decimals)
+      const rawAmount = BigInt(Math.round(amount * 10_000_000));
+
+      const operation = contract.call(
+        'mint',
+        new Address(toPublicKey).toScVal(),
+        nativeToScVal(rawAmount, { type: 'i128' }),
+      );
+
+      const txHash = await this.submitSorobanTransaction(operation);
+
+      this.logger.log(
+        `TNL minted: ${amount} TNL to ${toPublicKey}, tx=${txHash}`,
+      );
+
+      return { success: true, txHash, amount };
+    } catch (error) {
+      this.logger.error('Failed to mint TNL tokens', error);
+      return this.mockMintTokens(toPublicKey, amount);
+    }
+  }
+
+  /**
+   * Get TNL token balance for a user.
+   */
+  async getTokenBalance(publicKey: string): Promise<number> {
+    if (!this.tokenContractId) {
+      return 0;
+    }
+
+    try {
+      const contract = new Contract(this.tokenContractId);
+      const operation = contract.call(
+        'balance',
+        new Address(publicKey).toScVal(),
+      );
+
+      const result = await this.simulateSorobanCall(operation);
+      if (!result) return 0;
+
+      const rawBalance = scValToNative(result) as bigint;
+      return Number(rawBalance) / 10_000_000; // Convert from 7 decimal places
+    } catch (error) {
+      this.logger.error('Failed to get TNL balance', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Initialize the TNL token contract (call once after deploy).
+   */
+  async initializeToken(): Promise<{ success: boolean; txHash?: string }> {
+    if (!this.tokenContractId) {
+      return { success: false };
+    }
+
+    try {
+      const contract = new Contract(this.tokenContractId);
+      const operation = contract.call(
+        'initialize',
+        new Address(this.adminKeypair.publicKey()).toScVal(),
+        nativeToScVal(7, { type: 'u32' }),
+        nativeToScVal('Tonalli', { type: 'string' }),
+        nativeToScVal('TNL', { type: 'string' }),
+      );
+
+      const txHash = await this.submitSorobanTransaction(operation);
+      this.logger.log(`TNL token initialized, tx=${txHash}`);
+      return { success: true, txHash };
+    } catch (error) {
+      this.logger.error('Failed to initialize TNL token', error);
+      return { success: false };
+    }
+  }
+
+  // ── Podium NFT ─────────────────────────────────────────────────────────────
+
+  /**
+   * Mint a podium NFT for a weekly winner (top 3).
+   * Calls the `podio-nft` contract on Soroban.
+   */
+  async mintPodiumNft(params: MintPodiumNftParams): Promise<{
+    success: boolean;
+    txHash: string;
+  }> {
+    if (!this.podiumNftContractId) {
+      this.logger.warn('PODIUM_NFT_CONTRACT_ID not set — using mock response');
+      return this.mockMintPodiumNft(params);
+    }
+
+    try {
+      const contract = new Contract(this.podiumNftContractId);
+
+      const operation = contract.call(
+        'mint_podium_nft',
+        nativeToScVal(params.week, { type: 'string' }),
+        new Address(params.userPublicKey).toScVal(),
+        nativeToScVal(params.rank, { type: 'u32' }),
+        nativeToScVal(params.xlmRewardStroops, { type: 'u64' }),
+        nativeToScVal(params.txHash, { type: 'string' }),
+      );
+
+      const txHash = await this.submitSorobanTransaction(operation);
+
+      this.logger.log(
+        `Podium NFT minted: rank=${params.rank}, week=${params.week}, winner=${params.userPublicKey}, tx=${txHash}`,
+      );
+
+      return { success: true, txHash };
+    } catch (error) {
+      this.logger.error('Failed to mint podium NFT', error);
+      return this.mockMintPodiumNft(params);
+    }
+  }
+
+  /**
+   * Get a podium NFT for a given week and user
+   */
+  async getPodiumNft(week: string, userPublicKey: string): Promise<PodiumNFTData | null> {
+    if (!this.podiumNftContractId) return null;
+
+    try {
+      const contract = new Contract(this.podiumNftContractId);
+      const operation = contract.call(
+        'get_podium_nft',
+        nativeToScVal(week, { type: 'string' }),
+        new Address(userPublicKey).toScVal(),
+      );
+
+      const result = await this.simulateSorobanCall(operation);
+      if (!result) return null;
+
+      const native = scValToNative(result) as any;
+      if (!native) return null;
+
+      return {
+        rank: native.rank,
+        xlmReward: Number(native.xlm_reward),
+        week: native.week,
+        txHash: native.tx_hash,
+        issuedAt: Number(native.issued_at),
+        owner: native.owner,
+      };
+    } catch (error) {
+      this.logger.error('Failed to get podium NFT', error);
+      return null;
+    }
+  }
+
+  /**
+   * Check if a user has a podium NFT for a given week
+   */
+  async hasPodiumNft(week: string, userPublicKey: string): Promise<boolean> {
+    if (!this.podiumNftContractId) return false;
+
+    try {
+      const contract = new Contract(this.podiumNftContractId);
+      const operation = contract.call(
+        'has_nft',
+        nativeToScVal(week, { type: 'string' }),
+        new Address(userPublicKey).toScVal(),
+      );
+
+      const result = await this.simulateSorobanCall(operation);
+      return result ? (scValToNative(result) as boolean) : false;
+    } catch (error) {
+      this.logger.error('Failed to check podium NFT', error);
+      return false;
+    }
+  }
+
+  // ── Learn-to-Earn Queries ──────────────────────────────────────────────────
+
+  /**
+   * Get the on-chain reward history for a user
+   */
+  async getRewardHistory(userPublicKey: string): Promise<RewardHistoryEntry[]> {
+    if (!this.rewardsContractId) return [];
+
+    try {
+      const contract = new Contract(this.rewardsContractId);
+      const operation = contract.call(
+        'get_reward_history',
+        new Address(userPublicKey).toScVal(),
+      );
+
+      const result = await this.simulateSorobanCall(operation);
+      if (!result) return [];
+
+      const native = scValToNative(result) as any[];
+      return native.map((r: any) => ({
+        lessonId: r.lesson_id,
+        amount: Number(r.amount),
+        timestamp: Number(r.timestamp),
+      }));
+    } catch (error) {
+      this.logger.error('Failed to get reward history', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get total XLM rewards (in stroops) for a user from the contract
+   */
+  async getUserTotalRewards(userPublicKey: string): Promise<number> {
+    if (!this.rewardsContractId) return 0;
+
+    try {
+      const contract = new Contract(this.rewardsContractId);
+      const operation = contract.call(
+        'get_user_total_rewards',
+        new Address(userPublicKey).toScVal(),
+      );
+
+      const result = await this.simulateSorobanCall(operation);
+      if (!result) return 0;
+
+      return Number(scValToNative(result) as bigint);
+    } catch (error) {
+      this.logger.error('Failed to get user total rewards', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Check if a lesson was already rewarded on-chain (anti-double-claim)
+   */
+  async isLessonRewarded(userPublicKey: string, lessonId: string): Promise<boolean> {
+    if (!this.rewardsContractId) return false;
+
+    try {
+      const contract = new Contract(this.rewardsContractId);
+      const operation = contract.call(
+        'is_lesson_rewarded',
+        new Address(userPublicKey).toScVal(),
+        nativeToScVal(lessonId, { type: 'string' }),
+      );
+
+      const result = await this.simulateSorobanCall(operation);
+      return result ? (scValToNative(result) as boolean) : false;
+    } catch (error) {
+      this.logger.error('Failed to check lesson rewarded', error);
+      return false;
+    }
+  }
+
   // ── Helpers Internos ───────────────────────────────────────────────────────
 
   /**
@@ -397,6 +690,30 @@ export class SorobanService {
       txHash,
       contractId: 'MOCK_CONTRACT_' + this.network.toUpperCase(),
     };
+  }
+
+  private async mockMintTokens(toPublicKey: string, amount: number) {
+    const txHash = Array.from({ length: 64 }, () =>
+      Math.floor(Math.random() * 16).toString(16),
+    ).join('');
+
+    this.logger.log(
+      `[MOCK] TNL mint: ${amount} TNL to ${toPublicKey}, tx=${txHash}`,
+    );
+
+    return { success: true, txHash, amount };
+  }
+
+  private async mockMintPodiumNft(params: MintPodiumNftParams) {
+    const txHash = Array.from({ length: 64 }, () =>
+      Math.floor(Math.random() * 16).toString(16),
+    ).join('');
+
+    this.logger.log(
+      `[MOCK] Podium NFT minted: rank=${params.rank}, week=${params.week}, winner=${params.userPublicKey}, tx=${txHash}`,
+    );
+
+    return { success: true, txHash };
   }
 
   private async mockRewardUser(params: RewardUserParams) {

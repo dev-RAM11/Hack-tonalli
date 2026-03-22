@@ -6,6 +6,7 @@ import { WeeklyScore } from './entities/weekly-score.entity';
 import { PodiumReward } from './entities/podium-reward.entity';
 import { User } from '../users/entities/user.entity';
 import { StellarService } from '../stellar/stellar.service';
+import { SorobanService } from '../stellar/soroban.service';
 
 @Injectable()
 export class PodiumService {
@@ -20,6 +21,7 @@ export class PodiumService {
     @InjectRepository(User)
     private readonly usersRepo: Repository<User>,
     private readonly stellarService: StellarService,
+    private readonly sorobanService: SorobanService,
   ) {}
 
   getCurrentWeek(): string {
@@ -151,6 +153,30 @@ export class PodiumService {
     }));
   }
 
+  // Get user's podium NFTs from the rewards table
+  async getUserPodiumNfts(userId: string) {
+    const rewards = await this.rewardsRepo.find({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+    });
+
+    return rewards
+      .filter((r) => r.status === 'paid')
+      .map((r) => ({
+        id: r.id,
+        week: r.week,
+        position: r.position,
+        rewardUsd: r.rewardUsd,
+        rewardXlm: r.rewardXlm,
+        txHash: r.txHash,
+        nftTxHash: r.nftTxHash,
+        createdAt: r.createdAt,
+        stellarExplorerUrl: r.nftTxHash
+          ? `https://stellar.expert/explorer/testnet/tx/${r.nftTxHash}`
+          : null,
+      }));
+  }
+
   // Circuit breaker
   pauseRewards() {
     this.paused = true;
@@ -239,6 +265,24 @@ export class PodiumService {
         }
 
         reward.txHash = txHash;
+
+        // Mint podium NFT on Soroban
+        try {
+          const xlmStroops = Math.round(parseFloat(xlmAmount) * 10_000_000);
+          const nftResult = await this.sorobanService.mintPodiumNft({
+            week: targetWeek,
+            userPublicKey: user.stellarPublicKey,
+            rank: i + 1,
+            xlmRewardStroops: xlmStroops,
+            txHash,
+          });
+          if (nftResult.success) {
+            reward.nftTxHash = nftResult.txHash;
+            this.logger.log(`Podium NFT minted for ${user.username} (rank ${i + 1}), tx=${nftResult.txHash}`);
+          }
+        } catch (nftErr) {
+          this.logger.error(`Podium NFT mint failed for ${user.username}: ${nftErr.message}`);
+        }
       } else {
         // No wallet — retain for 7 days
         reward.status = 'retained';

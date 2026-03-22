@@ -1,0 +1,11 @@
+[package]
+name = "tonalli-interfaces"
+version = "0.1.0"
+edition = "2021"
+description = "Interfaces (traits) para los smart contracts de Tonalli - Solo Podio y Rewards"
+
+[dependencies]
+soroban-sdk = "21.0.0"
+
+[lib]
+crate-type = ["cdylib", "rlib"]

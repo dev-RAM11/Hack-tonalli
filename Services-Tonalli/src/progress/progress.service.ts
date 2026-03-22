@@ -5,6 +5,7 @@ import { Progress } from './entities/progress.entity';
 import { NFTCertificate } from './entities/nft-certificate.entity';
 import { UsersService } from '../users/users.service';
 import { StellarService } from '../stellar/stellar.service';
+import { SorobanService } from '../stellar/soroban.service';
 import { Lesson } from '../lessons/entities/lesson.entity';
 import { Quiz } from '../lessons/entities/quiz.entity';
 
@@ -31,6 +32,7 @@ export class ProgressService {
     private readonly quizRepository: Repository<Quiz>,
     private readonly usersService: UsersService,
     private readonly stellarService: StellarService,
+    private readonly sorobanService: SorobanService,
   ) {}
 
   async submitQuiz(
@@ -99,30 +101,41 @@ export class ProgressService {
       await this.usersService.addXP(userId, xpEarned);
       await this.usersService.updateStreak(userId);
 
+      // Send XLM reward from admin wallet (not user's secret key)
       if (user.stellarPublicKey && lesson?.xlmReward) {
         try {
           await this.stellarService.ensureAccountFunded(user.stellarPublicKey);
 
-          if (user.stellarSecretKey) {
-            const xlmResult = await this.stellarService.sendXLMReward(
-              user.stellarSecretKey,
-              user.stellarPublicKey,
-              lesson.xlmReward,
-            );
-            if (xlmResult.success) {
-              xlmReward = { amount: lesson.xlmReward, txHash: xlmResult.txHash };
-            }
+          const xlmResult = await this.stellarService.sendRewardFromAdmin(
+            user.stellarPublicKey,
+            lesson.xlmReward,
+          );
+          if (xlmResult.success) {
+            xlmReward = { amount: lesson.xlmReward, txHash: xlmResult.txHash };
           }
         } catch (error) {
           this.logger.error(`XLM reward failed: ${error.message}`);
         }
       }
 
-      if (user.stellarPublicKey && user.stellarSecretKey && lesson) {
+      // Mint TNL tokens as learning reward
+      if (user.stellarPublicKey && lesson) {
         try {
-          const nftResult = await this.stellarService.mintNFT(
+          const tnlAmount = (lesson.xpReward || 50) / 10; // 1 TNL per 10 XP
+          await this.sorobanService.mintTokens(
             user.stellarPublicKey,
-            user.stellarSecretKey,
+            tnlAmount,
+          );
+        } catch (error) {
+          this.logger.error(`TNL mint failed: ${error.message}`);
+        }
+      }
+
+      // Mint NFT certificate from admin wallet (no user secret key needed)
+      if (user.stellarPublicKey && lesson) {
+        try {
+          const nftResult = await this.stellarService.mintNFTFromAdmin(
+            user.stellarPublicKey,
             lesson.title,
             lessonId,
           );

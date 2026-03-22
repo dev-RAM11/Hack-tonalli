@@ -1,9 +1,12 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Zap, Flame, Star, BookOpen, Award, Copy, ExternalLink } from 'lucide-react';
+import { Zap, Flame, Star, BookOpen, Award, Copy, ExternalLink, Trophy } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { useProgressStore } from '../stores/progressStore';
 import { Link } from 'react-router-dom';
 import { useT } from '../hooks/useT';
+import { apiService } from '../services/api';
+import type { PodiumNFT } from '../types';
 
 function StatCard({ icon, value, label, color }: { icon: React.ReactNode; value: string | number; label: string; color: string }) {
   return (
@@ -94,10 +97,91 @@ function NFTCard({ nft }: { nft: { id: string; title: string; description: strin
   );
 }
 
+const PODIUM_EMOJIS = ['\uD83E\uDD47', '\uD83E\uDD48', '\uD83E\uDD49'];
+const PODIUM_COLORS = ['#FFD700', '#C0C0C0', '#CD7F32'];
+
+function PodiumTrophyCard({ nft }: { nft: PodiumNFT }) {
+  const t = useT();
+  const posIndex = nft.position - 1;
+  const emoji = PODIUM_EMOJIS[posIndex] || '\uD83C\uDFC6';
+  const color = PODIUM_COLORS[posIndex] || '#FFD700';
+
+  return (
+    <motion.div
+      whileHover={{ y: -6, scale: 1.02 }}
+      style={{
+        background: `linear-gradient(135deg, ${color}20, ${color}10)`,
+        border: `1px solid ${color}60`,
+        borderRadius: 16,
+        padding: 20,
+        position: 'relative',
+        overflow: 'hidden',
+        textAlign: 'center',
+      }}
+    >
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, height: '50%',
+        background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, transparent 100%)',
+        borderRadius: '16px 16px 0 0',
+      }} />
+
+      <div style={{ fontSize: '3.5rem', marginBottom: 12, filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.5))' }}>
+        {emoji}
+      </div>
+
+      <div style={{
+        display: 'inline-block',
+        padding: '3px 12px', borderRadius: 20,
+        background: `${color}30`, border: `1px solid ${color}`,
+        fontSize: '0.75rem', fontWeight: 800, color,
+        marginBottom: 10,
+      }}>
+        {nft.position === 1 ? '1er Lugar' : nft.position === 2 ? '2do Lugar' : '3er Lugar'}
+      </div>
+
+      <h3 style={{ fontWeight: 900, fontSize: '1rem', marginBottom: 4 }}>
+        Semana {nft.week}
+      </h3>
+      <p style={{ fontSize: '0.85rem', color, fontWeight: 700, marginBottom: 8 }}>
+        +{nft.rewardXlm} XLM (${nft.rewardUsd} USD)
+      </p>
+
+      {nft.nftTxHash && (
+        <div style={{
+          background: 'rgba(0,0,0,0.3)',
+          borderRadius: 8, padding: '6px 10px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          marginTop: 8,
+        }}>
+          <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
+            NFT: {nft.nftTxHash.substring(0, 8)}...
+          </span>
+          {nft.stellarExplorerUrl && (
+            <a href={nft.stellarExplorerUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)' }}>
+              <ExternalLink size={12} />
+            </a>
+          )}
+        </div>
+      )}
+
+      <div style={{ marginTop: 8, fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+        {new Date(nft.createdAt).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}
+      </div>
+    </motion.div>
+  );
+}
+
 export function Profile() {
   const { user } = useAuthStore();
   const { dailyStreak, completedLessons } = useProgressStore();
   const t = useT();
+  const [podiumNfts, setPodiumNfts] = useState<PodiumNFT[]>([]);
+
+  useEffect(() => {
+    if (user) {
+      apiService.getPodiumNfts().then(setPodiumNfts).catch(() => {});
+    }
+  }, [user]);
 
   if (!user) {
     return (
@@ -167,12 +251,30 @@ export function Profile() {
         </div>
 
         {user.walletAddress && (
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-            background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.3)',
-            borderRadius: 20, padding: '6px 14px', fontSize: '0.8rem',
-          }}>
-            ⭐ {t('stellarWallet')}: {user.walletAddress}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.3)',
+              borderRadius: 20, padding: '6px 14px', fontSize: '0.75rem',
+            }}>
+              <span style={{
+                padding: '1px 6px', borderRadius: 8, fontSize: '0.6rem', fontWeight: 700,
+                background: user.walletType === 'hybrid' ? 'rgba(46,139,63,0.3)' : 'rgba(155,89,182,0.3)',
+                color: user.walletType === 'hybrid' ? '#2E8B3F' : '#9B59B6',
+              }}>
+                {user.walletType === 'hybrid' ? 'HIBRIDA' : 'CUSTODIAL'}
+              </span>
+              {user.walletAddress.substring(0, 8)}...{user.walletAddress.substring(user.walletAddress.length - 8)}
+            </div>
+            {user.externalWalletAddress && (
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                background: 'rgba(46,139,63,0.1)', border: '1px solid rgba(46,139,63,0.3)',
+                borderRadius: 20, padding: '4px 12px', fontSize: '0.7rem', color: 'var(--primary)',
+              }}>
+                Externa: {user.externalWalletAddress.substring(0, 8)}...{user.externalWalletAddress.substring(user.externalWalletAddress.length - 8)}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -251,6 +353,28 @@ export function Profile() {
             }}>
               <div style={{ fontWeight: 900, fontSize: '1.5rem', color: 'var(--primary)' }}>🔥 {dailyStreak}</div>
               <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{t('activeDays')}</div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Podium Trophies */}
+        {podiumNfts.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            style={{ marginBottom: 32 }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Trophy size={24} color="#FFD700" /> Trofeos del Podio
+              </h2>
+              <span className="badge badge-primary">{podiumNfts.length} {podiumNfts.length === 1 ? 'trofeo' : 'trofeos'}</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+              {podiumNfts.map((nft) => (
+                <PodiumTrophyCard key={nft.id} nft={nft} />
+              ))}
             </div>
           </motion.div>
         )}

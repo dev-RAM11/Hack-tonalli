@@ -80,6 +80,8 @@ export class AuthService {
         username: user.username,
         displayName: user.displayName,
         xp: user.xp,
+        totalXp: user.totalXp,
+        currentStreak: user.currentStreak,
         walletAddress: user.stellarPublicKey,
         externalWalletAddress: user.externalWalletAddress || null,
         walletType: user.walletType || 'custodial',

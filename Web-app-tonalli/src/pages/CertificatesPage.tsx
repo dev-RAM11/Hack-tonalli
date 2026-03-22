@@ -15,7 +15,13 @@ export function CertificatesPage() {
   const [verifyResult, setVerifyResult] = useState<any>(null);
   const [vaultUnlocked, setVaultUnlocked] = useState(false);
 
-  // When Freighter connects, unlock vault and load certs
+  // Auto-unlock and load certs on mount (demo mode)
+  useEffect(() => {
+    setVaultUnlocked(true);
+    loadCerts();
+  }, []);
+
+  // Also sync if Freighter connects
   useEffect(() => {
     if (freighter.isConnected && freighter.publicKey) {
       setVaultUnlocked(true);
@@ -72,114 +78,13 @@ export function CertificatesPage() {
           {vaultUnlocked ? t('myCertificatesPage') : 'Vault de Credenciales'}
         </h1>
         <p style={{ color: 'var(--text-muted)' }}>
-          {vaultUnlocked
-            ? t('acta_certified')
-            : 'Conecta tu wallet Freighter para acceder a tus certificados verificables'}
+          {t('acta_certified')}
         </p>
       </div>
 
       <div className="container" style={{ padding: '32px 24px', maxWidth: 900, margin: '0 auto' }}>
 
-        {/* ── Vault Gate: Freighter required ─────────────────────────────── */}
-        {!vaultUnlocked && (
-          <div style={{
-            textAlign: 'center',
-            padding: '60px 24px',
-          }}>
-            {/* Vault illustration */}
-            <div style={{
-              width: 120, height: 120, borderRadius: '50%',
-              background: 'linear-gradient(135deg, rgba(155,89,182,0.2), rgba(245,197,24,0.1))',
-              border: '2px solid rgba(155,89,182,0.4)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              margin: '0 auto 24px',
-            }}>
-              <Lock size={48} color="#9B59B6" />
-            </div>
-
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: 12 }}>
-              Vault Protegido por Wallet
-            </h2>
-            <p style={{ color: 'var(--text-muted)', marginBottom: 8, maxWidth: 500, margin: '0 auto 8px' }}>
-              Tus credenciales verificables (ACTA) estan almacenadas en blockchain y protegidas por tu wallet.
-              Solo tu puedes acceder a ellas firmando con Freighter.
-            </p>
-            <p style={{ color: 'var(--text-muted)', marginBottom: 32, fontSize: '0.85rem' }}>
-              <Shield size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }} />
-              Nadie mas puede ver o descargar tus certificados sin tu firma.
-            </p>
-
-            <button
-              onClick={handleUnlockVault}
-              disabled={freighter.loading}
-              style={{
-                padding: '14px 32px', borderRadius: 12,
-                background: 'linear-gradient(135deg, #4A1A7A, #7B2FBE)',
-                border: '2px solid rgba(155,89,182,0.5)',
-                color: '#fff', fontWeight: 800, fontSize: '1rem', cursor: 'pointer',
-                display: 'inline-flex', alignItems: 'center', gap: 10,
-                boxShadow: '0 4px 20px rgba(155,89,182,0.3)',
-                opacity: freighter.loading ? 0.7 : 1,
-              }}
-            >
-              <Shield size={20} />
-              {freighter.loading ? 'Conectando...' : 'Desbloquear con Freighter'}
-            </button>
-
-            {!freighter.isInstalled && !freighter.loading && (
-              <div style={{ marginTop: 20 }}>
-                <a
-                  href="https://www.freighter.app/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    color: '#9B59B6', textDecoration: 'none', fontSize: '0.85rem',
-                    display: 'inline-flex', alignItems: 'center', gap: 6,
-                    padding: '8px 16px', borderRadius: 8,
-                    background: 'rgba(155,89,182,0.1)', border: '1px solid rgba(155,89,182,0.3)',
-                  }}
-                >
-                  <ExternalLink size={14} />
-                  Descarga Freighter (extension Chrome gratuita)
-                </a>
-              </div>
-            )}
-
-            {freighter.error && (
-              <div style={{ marginTop: 16, color: '#e74c3c', fontSize: '0.85rem' }}>
-                {freighter.error}
-              </div>
-            )}
-
-            {/* How it works */}
-            <div style={{
-              marginTop: 48, display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-              gap: 16, textAlign: 'center',
-            }}>
-              {[
-                { step: '1', title: 'Instala Freighter', desc: 'Extension de Chrome para Stellar. Crea tu wallet en 30 segundos.' },
-                { step: '2', title: 'Conecta tu wallet', desc: 'Firma con Freighter para desbloquear tu vault de credenciales.' },
-                { step: '3', title: 'Accede y descarga', desc: 'Ve, verifica y descarga tus certificados en PDF verificables.' },
-              ].map((item) => (
-                <div key={item.step} className="card" style={{ padding: 20 }}>
-                  <div style={{
-                    width: 36, height: 36, borderRadius: '50%',
-                    background: 'linear-gradient(135deg, var(--primary), var(--accent))',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontWeight: 900, color: '#fff', margin: '0 auto 12px',
-                  }}>
-                    {item.step}
-                  </div>
-                  <h4 style={{ fontWeight: 800, marginBottom: 6 }}>{item.title}</h4>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{item.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── Vault Unlocked Content ─────────────────────────────────────── */}
+        {/* ── Certificates Content ─────────────────────────────────────── */}
         {vaultUnlocked && (
           <>
             {/* Connected wallet badge */}

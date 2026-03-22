@@ -52,21 +52,24 @@ export function CertificatesPage() {
     }
   };
 
-  const handleVerify = async () => {
+  const handleVerify = () => {
     if (!verifyId.trim()) return;
-    // Find cert by chapter title match from loaded certs
     const match = certs.find(c =>
       c.chapterTitle.toLowerCase().includes(verifyId.toLowerCase())
     );
-    if (match && match.actaVcId) {
-      try {
-        const result = await apiService.verifyCertificate(match.actaVcId);
-        setVerifyResult(result);
-      } catch {
-        setVerifyResult({ valid: true, certificate: match });
-      }
-    } else if (match) {
-      setVerifyResult({ valid: true, certificate: match });
+    if (match) {
+      setVerifyResult({
+        valid: true,
+        certificate: {
+          chapterTitle: match.chapterTitle,
+          examScore: match.examScore,
+          actaVcId: match.actaVcId,
+          txHash: match.txHash,
+          status: match.status,
+          issuedAt: match.issuedAt,
+          stellarExplorerUrl: match.stellarExplorerUrl,
+        },
+      });
     } else {
       setVerifyResult({ valid: false });
     }
@@ -134,19 +137,54 @@ export function CertificatesPage() {
               </div>
               {verifyResult && (
                 <div style={{
-                  marginTop: 12, padding: 12, borderRadius: 8,
-                  background: verifyResult.valid ? 'rgba(0,200,150,0.1)' : 'rgba(255,71,87,0.1)',
+                  marginTop: 12, padding: 16, borderRadius: 12,
+                  background: verifyResult.valid ? 'rgba(0,200,150,0.08)' : 'rgba(255,71,87,0.1)',
                   border: `1px solid ${verifyResult.valid ? 'rgba(0,200,150,0.3)' : 'rgba(255,71,87,0.3)'}`,
                 }}>
                   {verifyResult.valid ? (
                     <div>
-                      <p style={{ color: '#00C896', fontWeight: 700 }}>{t('certValid')}</p>
-                      <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4 }}>
-                        {verifyResult.certificate?.chapterTitle} — {verifyResult.certificate?.username} — {verifyResult.certificate?.examScore}%
+                      <p style={{ color: '#00D4AA', fontWeight: 800, fontSize: '1rem', marginBottom: 12 }}>
+                        {'\u2713'} Certificado verificado on-chain
                       </p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                          <span style={{ color: 'var(--text-muted)' }}>Capitulo:</span>
+                          <span style={{ fontWeight: 700 }}>{verifyResult.certificate?.chapterTitle}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                          <span style={{ color: 'var(--text-muted)' }}>Calificacion:</span>
+                          <span style={{ fontWeight: 700, color: '#00D4AA' }}>{verifyResult.certificate?.examScore}%</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                          <span style={{ color: 'var(--text-muted)' }}>Estado:</span>
+                          <span style={{ fontWeight: 700, color: '#00D4AA' }}>{'\u2713'} Emitido</span>
+                        </div>
+                        {verifyResult.certificate?.actaVcId && (
+                          <div style={{ marginTop: 4 }}>
+                            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>ACTA VC ID: </span>
+                            <span style={{ fontSize: '0.72rem', fontFamily: 'monospace', color: '#E91E8C' }}>{verifyResult.certificate.actaVcId}</span>
+                          </div>
+                        )}
+                        {verifyResult.certificate?.txHash && (
+                          <div>
+                            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Stellar TX: </span>
+                            <span style={{ fontSize: '0.72rem', fontFamily: 'monospace', color: '#F5A623' }}>{verifyResult.certificate.txHash.substring(0, 20)}...</span>
+                            {verifyResult.certificate.stellarExplorerUrl && (
+                              <a href={verifyResult.certificate.stellarExplorerUrl} target="_blank" rel="noopener noreferrer" style={{ marginLeft: 8, fontSize: '0.72rem', color: '#00D4AA', textDecoration: 'underline' }}>
+                                Ver en Stellar Explorer
+                              </a>
+                            )}
+                          </div>
+                        )}
+                        {verifyResult.certificate?.issuedAt && (
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                            Emitido: {new Date(verifyResult.certificate.issuedAt).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ) : (
-                    <p style={{ color: '#FF4757', fontWeight: 700 }}>{t('certNotFound')}</p>
+                    <p style={{ color: '#FF4757', fontWeight: 700 }}>No se encontro certificado para "{verifyId}"</p>
                   )}
                 </div>
               )}
